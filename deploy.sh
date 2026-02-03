@@ -15,7 +15,7 @@ echo "Git pulling latest changes..."
 git pull origin master
 
 echo "📦 Building and starting containers..."
-docker compose up -d --build
+PORT=3011 docker compose up -d --build
 
 echo "🧹 Cleaning up old images..."
 docker image prune -f

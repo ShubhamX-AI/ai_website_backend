@@ -3,6 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    image: ai-website-backend:latest
     container_name: ai-website-api
     ports:
       - "${PORT:-8000}:8000"
@@ -17,9 +18,7 @@ services:
       retries: 3
 
   agent:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ai-website-backend:latest
     container_name: ai-website-agent
     env_file:
       - .env
