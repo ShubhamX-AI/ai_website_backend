@@ -30,6 +30,7 @@ server = AgentServer(
     api_key=settings.LIVEKIT_API_KEY,
     api_secret=settings.LIVEKIT_API_SECRET,
     ws_url=settings.LIVEKIT_URL,
+    job_memory_warn_mb=1024
 )
 
 @server.rtc_session()
