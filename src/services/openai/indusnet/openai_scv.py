@@ -173,7 +173,7 @@ class UIAgentFunctions:
     # Update the instructions with current active elements/UI state
     async def update_instructions_with_context(self, ui_context: dict) -> None:
         
-        logging.info("Updating instructions with UI context")
+        self.logger.info("Updating instructions with UI context")
         # Convert UI context to markdown format
         md = []
         for key, value in ui_context.items():

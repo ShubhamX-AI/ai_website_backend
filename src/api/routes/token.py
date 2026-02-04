@@ -1,8 +1,10 @@
+import logging
 from fastapi import APIRouter, Query, HTTPException
 from fastapi.responses import PlainTextResponse
 from typing import Optional
 from src.services.livekit.livekit_svc import livekit_service
-from src.core.logger import logger
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 

@@ -37,3 +37,13 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """
     async with AsyncSessionLocal() as session:
         yield session
+
+# Check connection
+async def check_connection():
+    async with engine.connect() as conn:
+        result = await conn.execute("SELECT 1")
+        print(result.scalar())
+
+if __name__ == "__main__":
+    import asyncio
+    asyncio.run(check_connection())

@@ -40,5 +40,5 @@ def setup_logging(level=logging.INFO):
     logging.getLogger("openai").setLevel(logging.WARNING)
     logging.getLogger("httpx").setLevel(logging.WARNING)
 
-logger = logging.getLogger("app")
+
 

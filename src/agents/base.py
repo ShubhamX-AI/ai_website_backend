@@ -1,6 +1,5 @@
 import logging
 from livekit.agents import Agent
-from src.core.logger import logger
 
 class BaseAgent(Agent):
     def __init__(self, room, instructions: str) -> None:

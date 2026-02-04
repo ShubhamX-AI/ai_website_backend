@@ -24,7 +24,7 @@ from src.agents.factory import get_agent_class
 from src.agents.indusnet.agent import IndusNetAgent
 
 setup_logging()
-logger = logging.getLogger("agent_worker")
+logger = logging.getLogger(__name__)
 
 server = AgentServer(
     api_key=settings.LIVEKIT_API_KEY,
