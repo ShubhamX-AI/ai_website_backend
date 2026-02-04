@@ -17,7 +17,11 @@ class Settings:
 
     # Server
     PORT = int(os.getenv("PORT", "8000"))
-    
+
+    # Database
+    # Using postgresql+psycopg which is the new psycopg3 driver (supports async)
+    DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+psycopg://user:password@localhost:5432/dbname")
+
     # Paths
     BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     ASSETS_DIR = os.path.join(BASE_DIR, "assets")
