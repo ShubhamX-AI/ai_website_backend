@@ -177,6 +177,6 @@ class UIAgentFunctions:
         # Convert UI context to markdown format
         md = []
         for key, value in ui_context.items():
-            md.append(f"**{key}**: `{json.dumps(value, indent=2) if isinstance(value, (dict, list)) else value}`")
+            md.append(f"**{key}**: `{json.dumps(value, indent=2, default=str) if isinstance(value, (dict, list)) else value}`")
 
         self.instructions = UI_SYSTEM_INSTRUCTION + "\n\nThe following is the current UI state. Generate the visual accordingly:\n\n" + "\n".join(md)

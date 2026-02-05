@@ -105,16 +105,8 @@ async def entrypoint(ctx: JobContext):
 
     # Start background audio
     asyncio.create_task(background_audio.start(room=ctx.room, agent_session=session))
-
-    # # Welcome message
-    # # Personalize welcome if name is known and not "Guest"
-    # welcome_text = agent_instance.welcome_message
-    # if user_name and user_name.lower() != "guest":
-    #      welcome_text = f"Hello {user_name}. {welcome_text}"
          
-    # await session.say(text=welcome_text, allow_interruptions=True)
-    await session.generate_reply(instructions="Greet the user lovingly in english.")
-
+    await session.generate_reply(instructions="Greet the user professional yet friendly in english.")
 
     # Keep alive
     participant_left = asyncio.Event()

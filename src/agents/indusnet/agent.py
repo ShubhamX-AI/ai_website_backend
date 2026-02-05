@@ -62,9 +62,10 @@ class IndusNetAgent(BaseAgent):
         self.logger.info(f"Retrieving user information for: {user_name}")
         
         # Publish user information via data packet
-        payload = {"user_name": user_name,"user_email": user_email, "user_id": uuid.uuid4()}
+        payload = {"user_name": user_name,"user_email": user_email, "user_id": str(uuid.uuid4())}
         topic = "user.details"
         await self._publish_data_packet(payload,topic)
+        return "User information published."
         
         
 
@@ -112,7 +113,7 @@ class IndusNetAgent(BaseAgent):
         """Publish a single data packet to the room."""
         try:
             await self.room.local_participant.publish_data(
-                json.dumps(payload).encode("utf-8"),
+                json.dumps(payload, default=str).encode("utf-8"),
                 reliable=True,
                 topic=topic,
             )
