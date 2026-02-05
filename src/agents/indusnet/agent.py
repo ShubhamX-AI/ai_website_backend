@@ -30,21 +30,15 @@ class IndusNetAgent(BaseAgent):
         self.db_fetch_size = 5
         self.db_results = ""
 
-        # User Context
+        # Context State
         self.user_id: Optional[str] = None
         self.user_name: Optional[str] = None
         self.user_email: Optional[str] = None
+        self._active_elements: list[str] = []
 
-    def set_user_context(self, user_id: str, user_name: str, user_email: Optional[str]):
-        """Set the current user's identity and context."""
-        self.user_id = user_id
-        self.user_name = user_name
-        self.user_email = user_email
-        self.logger.info(f"Agent context updated for user: {user_name} ({user_id})")
-
-    @property
-    def welcome_message(self):
-        return "Welcome to Indus Net Technologies. Tell me how can I help you today?"
+    # @property
+    # def welcome_message(self):
+    #     return "Welcome to Indus Net Technologies. Tell me how can I help you today?"
 
     @function_tool
     async def search_indus_net_knowledge_base(self, context: RunContext, question: str):
@@ -62,6 +56,19 @@ class IndusNetAgent(BaseAgent):
         # This runs in the background to ensure the voice response isn't delayed
         asyncio.create_task(self._publish_ui_stream(user_input, self.db_results, agent_response))
         return "UI stream published."
+
+    # Function tool to retrive user information and publish via data packet
+    @function_tool
+    async def get_user_info(self, context: RunContext, user_name: str, user_email: str):
+        """Get user information."""
+        self.logger.info(f"Retrieving user information for: {user_name}")
+        
+        # Publish user information via data packet
+        payload = {"user_name": user_name,"user_email": user_email, "user_id": uuid.uuid4()}
+        topic = "user.details"
+        await self._publish_data_packet(payload,topic)
+        
+        
 
     # Handle data from the frontend
     def handle_data(self, data: rtc.DataPacket):
@@ -86,8 +93,13 @@ class IndusNetAgent(BaseAgent):
             asyncio.create_task(self._update_ui_context(context_payload))
 
         if topic == "user.context":
-            self.logger.info("📱 User Context Sync received", context_payload)
-            # asyncio.create_task(self._update_user_context(context_payload))
+            self.logger.info("📱 User Context Sync received: %s", context_payload)
+            self.user_id=context_payload.get("user_id"),
+            self.user_name=context_payload.get("user_name"),
+            self.user_email=context_payload.get("user_email")
+            if self.user_name and self.user_name.lower() != "guest":
+                await self._update_instructions()
+
 
     # ==================== Private Helper Methods ====================
 
@@ -218,22 +230,40 @@ class IndusNetAgent(BaseAgent):
         # Update the UI agent with the UI context
         await self.ui_agent_functions.update_instructions_with_context(ui_context)
         
-        # Update the agent instructions with current active elements/UI state
-        await self._update_instructions_with_context(ui_context["active_elements"])
+        # Update our state and rebuild the full prompt
+        self._active_elements = ui_context.get("active_elements", [])
+        await self._update_instructions()
 
-    async def _update_instructions_with_context(self, active_elements: list = None) -> None:
-        """Inject current UI state into agent instructions."""
-        if not active_elements:
-            return
-
-        self.logger.debug("Agent instructions updated with UI context")
+    async def _update_instructions(self) -> None:
+        """Rebuild and inject current UI and User state into agent instructions."""
+        self.logger.debug("Rebuilding agent instructions with full context")
         
-        # Convert active elements to markdown
-        active_elements_md = "\n".join(f"- {element}" for element in active_elements)
-        new_instructions = (
-            f"{self._base_instruction}\n\n"
-            f"Elements Currently Present in UI:\n{active_elements_md}"
-        )
+        # 1. Start with base instructions
+        new_instructions = f"{self._base_instruction}\n\n"
+
+        # 2. Add User Context
+        if self.user_name and self.user_name.lower() != "guest":
+            new_instructions += (
+                f"### Current User Information:\n"
+                f"- **Name**: {self.user_name}\n"
+                f"- **Email**: {self.user_email or 'Not provided'}\n"
+                f"Greet the user by their name and use this context to personalize your response.\n\n"
+            )
+        else:
+            new_instructions += (
+                f"### User Identity: Unknown\n"
+                f"The user is currently a Guest. You MUST naturally and professionally ask for their name and email "
+                f"during the conversation if they haven't provided it yet. Don't be pushy, but ensure you get this information.\n\n"
+            )
+
+        # 3. Add UI Context
+        if self._active_elements:
+            active_elements_md = "\n".join(f"- {element}" for element in self._active_elements)
+            new_instructions += (
+                f"### Elements Currently Present in UI:\n"
+                f"{active_elements_md}\n"
+                f"Use this to refer to what the user is seeing or to avoid repeating visible content.\n"
+            )
 
         # Update the LLM system prompt
         await self.update_instructions(new_instructions)

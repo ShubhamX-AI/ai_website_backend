@@ -94,9 +94,9 @@ async def entrypoint(ctx: JobContext):
     # TODO: Update AgentClass to accept user_id, user_name on init for cleaner DI
     agent_instance = AgentClass(room=ctx.room) 
     
-    # HACK: Manually set user context on the agent instance for now
-    if hasattr(agent_instance, "set_user_context"):
-        agent_instance.set_user_context(user_id, user_name, user_email)
+    # # HACK: Manually set user context on the agent instance for now
+    # if hasattr(agent_instance, "set_user_context"):
+    #     agent_instance.set_user_context(user_id, user_name, user_email)
 
     session.update_agent(agent=agent_instance)
 
@@ -106,11 +106,11 @@ async def entrypoint(ctx: JobContext):
     # Start background audio
     asyncio.create_task(background_audio.start(room=ctx.room, agent_session=session))
 
-    # Welcome message
-    # Personalize welcome if name is known and not "Guest"
-    welcome_text = agent_instance.welcome_message
-    if user_name and user_name.lower() != "guest":
-         welcome_text = f"Hello {user_name}. {welcome_text}"
+    # # Welcome message
+    # # Personalize welcome if name is known and not "Guest"
+    # welcome_text = agent_instance.welcome_message
+    # if user_name and user_name.lower() != "guest":
+    #      welcome_text = f"Hello {user_name}. {welcome_text}"
          
     # await session.say(text=welcome_text, allow_interruptions=True)
     await session.generate_reply(instructions="Greet the user in english.")
