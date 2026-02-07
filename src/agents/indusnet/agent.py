@@ -93,9 +93,12 @@ class IndusNetAgent(BaseAgent):
 
         if topic == "user.context":
             self.logger.info("📱 User Context Sync received: %s", context_payload)
-            self.user_id = context_payload.get("user_id")
-            self.user_name = context_payload.get("user_name")
-            self.user_email = context_payload.get("user_email")
+            # Fix: User info is nested inside "user_info" key
+            user_info = context_payload.get("user_info", {})
+            self.user_id = user_info.get("user_id")
+            self.user_name = user_info.get("user_name")
+            self.user_email = user_info.get("user_email")
+            
             if self.user_name and self.user_name.lower() != "guest":
                 asyncio.create_task(self._update_instructions())
 
@@ -242,6 +245,9 @@ class IndusNetAgent(BaseAgent):
 
         # 2. Add User Context
         if self.user_name and self.user_name.lower() != "guest":
+
+            self.logger.info(f"Adding user context to agent instructions for {self.user_name}, {self.user_email}")
+
             new_instructions += (
                 f"### Current User Information:\n"
                 f"- **Name**: {self.user_name}\n"
