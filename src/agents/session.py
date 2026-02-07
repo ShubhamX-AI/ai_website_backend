@@ -89,7 +89,7 @@ async def entrypoint(ctx: JobContext):
     asyncio.create_task(background_audio.start(room=ctx.room, agent_session=session))
 
     await agent_instance.wait_for_user_context(timeout=3.0)
-    await session.generate_reply(instructions=agent_instance.welcome_message)
+    await session.generate_reply(instructions=agent_instance.welcome_greeting_instruction)
 
     # Keep alive
     participant_left = asyncio.Event()

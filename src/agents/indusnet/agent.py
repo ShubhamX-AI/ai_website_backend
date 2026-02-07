@@ -37,8 +37,13 @@ class IndusNetAgent(BaseAgent):
         self._user_context_ready: asyncio.Event = asyncio.Event()
 
     @property
-    def welcome_message(self):
-        return f"Greet the user with the **Name** in English. User name is **{self.user_name}**"
+    def welcome_greeting_instruction(self):
+        name = (self.user_name or "").strip()
+
+        if not name or name.lower() == "guest":
+            return "Greet the user professionally and in a friendly manner"
+
+        return f"Greet the user professionally and in a friendly manner with their name first name. *Name: {self.user_name}*"
 
     @function_tool
     async def search_indus_net_knowledge_base(self, context: RunContext, question: str):
