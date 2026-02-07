@@ -12,6 +12,7 @@ from livekit.agents import (
     cli,
     BackgroundAudioPlayer,
     AudioConfig,
+    room_io
 )
 from livekit.plugins import cartesia
 from livekit.plugins.openai import realtime
@@ -65,9 +66,19 @@ async def entrypoint(ctx: JobContext):
 
     agent_instance = IndusNetAgent(room=ctx.room)
 
+    # Configure room options
+    room_options = room_io.RoomOptions(
+        text_input=True,
+        audio_input=True,
+        audio_output=True,
+        close_on_disconnect=True,
+        delete_room_on_close=True,
+    )
+
     await session.start(
         agent=agent_instance,
-        room=ctx.room
+        room=ctx.room,
+        room_options=room_options
         )
     
     participant = await ctx.wait_for_participant()
@@ -79,7 +90,7 @@ async def entrypoint(ctx: JobContext):
     # Start background audio
     asyncio.create_task(background_audio.start(room=ctx.room, agent_session=session))
          
-    await session.generate_reply(instructions="Greet the user professional yet friendly in english.")
+    await session.generate_reply(instructions=agent_instance.welcome_message)
 
     # Keep alive
     participant_left = asyncio.Event()

@@ -35,9 +35,9 @@ class IndusNetAgent(BaseAgent):
         self.user_email: Optional[str] = None
         self._active_elements: list[str] = []
 
-    # @property
-    # def welcome_message(self):
-    #     return "Welcome to Indus Net Technologies. Tell me how can I help you today?"
+    @property
+    def welcome_message(self):
+        return f"Greet the user with the **Name** in English. User name is **{self.user_name}**"
 
     @function_tool
     async def search_indus_net_knowledge_base(self, context: RunContext, question: str):
