@@ -12,7 +12,7 @@ from src.services.openai.indusnet.openai_scv import UIAgentFunctions
 from src.services.vectordb.vectordb_svc import VectorStoreService
 
 # Constants
-FRONTEND_CONTEXT = ["ui.context","user.context"]
+FRONTEND_CONTEXT = ["ui.context", "user.context"]
 TOPIC_UI_FLASHCARD = "ui.flashcard"
 SKIPPED_METADATA_KEYS = ["source_content_focus"]
 
@@ -23,7 +23,7 @@ class IndusNetAgent(BaseAgent):
     def __init__(self, room) -> None:
         self._base_instruction = INDUSNET_AGENT_PROMPT + TTS_HUMANIFICATION_CARTESIA
         super().__init__(room=room, instructions=self._base_instruction)
-        
+
         self.ui_agent_functions = UIAgentFunctions()
         self.vector_store = VectorStoreService()
         self.db_fetch_size = 5
@@ -34,6 +34,7 @@ class IndusNetAgent(BaseAgent):
         self.user_name: Optional[str] = None
         self.user_email: Optional[str] = None
         self._active_elements: list[str] = []
+        self._user_context_ready: asyncio.Event = asyncio.Event()
 
     @property
     def welcome_message(self):
@@ -48,32 +49,40 @@ class IndusNetAgent(BaseAgent):
         return self.db_results
 
     @function_tool
-    async def publish_ui_stream(self, context: RunContext, user_input: str, agent_response: str) -> str:
+    async def publish_ui_stream(
+        self, context: RunContext, user_input: str, agent_response: str
+    ) -> str:
         """Tool used to publish the UI stream to the frontend."""
         self.logger.info(f"Publishing UI stream for: {user_input}")
-        
+
         # This runs in the background to ensure the voice response isn't delayed
-        asyncio.create_task(self._publish_ui_stream(user_input, self.db_results, agent_response))
+        asyncio.create_task(
+            self._publish_ui_stream(user_input, self.db_results, agent_response)
+        )
         return "UI stream published."
 
     @function_tool
-    async def get_user_info(self, context: RunContext, user_name: str, user_email: str = ""):
+    async def get_user_info(
+        self, context: RunContext, user_name: str, user_email: str = ""
+    ):
         """Get user information."""
         self.logger.info(f"Retrieving user information for: {user_name}")
-        
+
         # Publish user information via data packet
-        payload = {"user_name": user_name,"user_email": user_email, "user_id": str(uuid.uuid4())}
+        payload = {
+            "user_name": user_name,
+            "user_email": user_email,
+            "user_id": str(uuid.uuid4()),
+        }
         topic = "user.details"
-        await self._publish_data_packet(payload,topic)
+        await self._publish_data_packet(payload, topic)
         return "User information published."
-        
-        
 
     # Handle data from the frontend
     def handle_data(self, data: rtc.DataPacket):
         """Handle incoming data packets from the room."""
         topic = getattr(data, "topic", None)
-        
+
         if topic not in FRONTEND_CONTEXT:
             return
 
@@ -84,7 +93,9 @@ class IndusNetAgent(BaseAgent):
         try:
             context_payload = json.loads(payload_text)
         except json.JSONDecodeError:
-            self.logger.warning(f"Invalid payload for topic {topic} - JSON parse failed")
+            self.logger.warning(
+                f"Invalid payload for topic {topic} - JSON parse failed"
+            )
             return
 
         if topic == "ui.context":
@@ -98,10 +109,18 @@ class IndusNetAgent(BaseAgent):
             self.user_id = user_info.get("user_id")
             self.user_name = user_info.get("user_name")
             self.user_email = user_info.get("user_email")
-            
+            self._user_context_ready.set()
+
             if self.user_name and self.user_name.lower() != "guest":
                 asyncio.create_task(self._update_instructions())
 
+    async def wait_for_user_context(self, timeout: float) -> bool:
+        """Wait for user context to be received."""
+        try:
+            await asyncio.wait_for(self._user_context_ready.wait(), timeout=timeout)
+            return True
+        except asyncio.TimeoutError:
+            return False
 
     # ==================== Private Helper Methods ====================
 
@@ -125,42 +144,46 @@ class IndusNetAgent(BaseAgent):
             self.logger.error(f"❌ Failed to publish data: {e}")
             return False
 
-    async def _publish_ui_stream(self, user_input: str, db_results: str, agent_response: str) -> None:
+    async def _publish_ui_stream(
+        self, user_input: str, db_results: str, agent_response: str
+    ) -> None:
         """Generate and publish UI cards, filtering out already-visible content."""
         stream_id = str(uuid.uuid4())
         card_index = 0
-        
+
         async for payload in self.ui_agent_functions.query_process_stream(
             user_input=user_input, db_results=db_results, agent_response=agent_response
         ):
             title = payload.get("title", "")
-            
+
             # Inject grouping info
             payload["stream_id"] = stream_id
             payload["card_index"] = card_index
-            
+
             if await self._publish_data_packet(payload, TOPIC_UI_FLASHCARD):
                 self.logger.info(
-                    "✅ Data packet sent successfully: %s (Stream: %s, Index: %s)", 
-                    title, stream_id, card_index
+                    "✅ Data packet sent successfully: %s (Stream: %s, Index: %s)",
+                    title,
+                    stream_id,
+                    card_index,
                 )
-            
+
             card_index += 1
 
         # Send end-of-stream marker
         end_of_stream_payload = {
             "type": "end_of_stream",
             "stream_id": stream_id,
-            "card_count": card_index
+            "card_count": card_index,
         }
-        
+
         if await self._publish_data_packet(end_of_stream_payload, TOPIC_UI_FLASHCARD):
             self.logger.info(f"✅ End-of-stream marker sent for stream: {stream_id}")
 
     def _format_metadata_value(self, key: str, val: str) -> Optional[str]:
         """Format a single metadata value, handling JSON strings."""
         human_key = key.replace("_", " ").title()
-        
+
         # Check if it's a JSON string (list or dict)
         if isinstance(val, str) and val.strip().startswith(("[", "{")):
             try:
@@ -168,17 +191,19 @@ class IndusNetAgent(BaseAgent):
                 if isinstance(parsed, list):
                     formatted_val = ", ".join(map(str, parsed))
                 elif isinstance(parsed, dict):
-                    formatted_val = ", ".join([
-                        f"{k.replace('_', ' ').title()}: {v}" 
-                        for k, v in parsed.items()
-                    ])
+                    formatted_val = ", ".join(
+                        [
+                            f"{k.replace('_', ' ').title()}: {v}"
+                            for k, v in parsed.items()
+                        ]
+                    )
                 else:
                     formatted_val = str(parsed)
                 return f"**{human_key}:** {formatted_val}"
             except json.JSONDecodeError:
                 # Fallback for invalid JSON
                 return f"**{human_key}:** {val}"
-        
+
         # Regular value
         return f"**{human_key}:** {val}"
 
@@ -189,27 +214,27 @@ class IndusNetAgent(BaseAgent):
             # Skip internal/empty keys
             if not val or key in SKIPPED_METADATA_KEYS:
                 continue
-            
+
             formatted = self._format_metadata_value(key, val)
             if formatted:
                 details.append(formatted)
-        
+
         return details
 
     async def _vector_db_search(self, query: str) -> str:
         """Search the vector database for relevant information."""
         results = await self.vector_store.search(query, k=self.db_fetch_size)
-        
+
         formatted_results = []
         for i, doc in enumerate(results):
             content = doc.page_content.strip()
-            md_chunk = f"### Result {i+1}\n\n{content}\n"
-            
+            md_chunk = f"### Result {i + 1}\n\n{content}\n"
+
             # Format metadata
             details = self._format_metadata(doc.metadata)
             if details:
                 md_chunk += "\n" + "\n".join([f"- {d}" for d in details])
-            
+
             formatted_results.append(md_chunk)
 
         self.db_results = "\n\n---\n\n".join(formatted_results)
@@ -220,18 +245,18 @@ class IndusNetAgent(BaseAgent):
         """Process UI context sync from frontend and update agent state."""
         viewport = context_payload.get("viewport", {})
         capabilities = viewport.get("capabilities", {})
-        
+
         # Extract data from the payload
         ui_context = {
             "screen": viewport.get("screen", "desktop"),
             "theme": viewport.get("theme", "light"),
             "max_visible_cards": capabilities.get("maxVisibleCards", 4),
-            "active_elements": context_payload.get("active_elements", [])
+            "active_elements": context_payload.get("active_elements", []),
         }
 
         # Update the UI agent with the UI context
         await self.ui_agent_functions.update_instructions_with_context(ui_context)
-        
+
         # Update our state and rebuild the full prompt
         self._active_elements = ui_context.get("active_elements", [])
         await self._update_instructions()
@@ -239,14 +264,15 @@ class IndusNetAgent(BaseAgent):
     async def _update_instructions(self) -> None:
         """Rebuild and inject current UI and User state into agent instructions."""
         self.logger.debug("Rebuilding agent instructions with full context")
-        
+
         # 1. Start with base instructions
         new_instructions = f"{self._base_instruction}\n\n"
 
         # 2. Add User Context
         if self.user_name and self.user_name.lower() != "guest":
-
-            self.logger.info(f"Adding user context to agent instructions for {self.user_name}, {self.user_email}")
+            self.logger.info(
+                f"Adding user context to agent instructions for {self.user_name}, {self.user_email}"
+            )
 
             new_instructions += (
                 f"### Current User Information:\n"
@@ -263,7 +289,9 @@ class IndusNetAgent(BaseAgent):
 
         # 3. Add UI Context
         if self._active_elements:
-            active_elements_md = "\n".join(f"- {element}" for element in self._active_elements)
+            active_elements_md = "\n".join(
+                f"- {element}" for element in self._active_elements
+            )
             new_instructions += (
                 f"### Elements Currently Present in UI:\n"
                 f"{active_elements_md}\n"

@@ -12,7 +12,7 @@ from livekit.agents import (
     cli,
     BackgroundAudioPlayer,
     AudioConfig,
-    room_io
+    room_io,
 )
 from livekit.plugins import cartesia
 from livekit.plugins.openai import realtime
@@ -34,7 +34,7 @@ async def entrypoint(ctx: JobContext):
             model="gpt-realtime",
             input_audio_transcription=AudioTranscription(
                 model="gpt-4o-mini-transcribe",
-                prompt="Transcribe exactly what is spoken. If not understood ask the user to please repeat"
+                prompt="Transcribe exactly what is spoken. If not understood ask the user to please repeat",
             ),
             input_audio_noise_reduction="near_field",
             turn_detection=TurnDetection(
@@ -52,13 +52,13 @@ async def entrypoint(ctx: JobContext):
             api_key=settings.CARTESIA_API_KEY,
         ),
         preemptive_generation=True,
-        use_tts_aligned_transcript=True
+        use_tts_aligned_transcript=True,
     )
 
     # Background audio
     ambient_path = os.path.join(settings.AUDIO_DIR, "office-ambience_48k.wav")
     typing_path = os.path.join(settings.AUDIO_DIR, "typing-sound_48k.wav")
-    
+
     background_audio = BackgroundAudioPlayer(
         ambient_sound=AudioConfig(ambient_path, volume=0.4),
         thinking_sound=AudioConfig(typing_path, volume=0.5),
@@ -75,32 +75,36 @@ async def entrypoint(ctx: JobContext):
         delete_room_on_close=True,
     )
 
-    await session.start(
-        agent=agent_instance,
-        room=ctx.room,
-        room_options=room_options
-        )
-    
+    await session.start(agent=agent_instance, room=ctx.room, room_options=room_options)
+
     participant = await ctx.wait_for_participant()
-    logger.info(f"User Connected | Identity: {participant.identity} | Name: {participant.name} | Metadata: {participant.metadata}")
+    logger.info(
+        f"User Connected | Identity: {participant.identity} | Name: {participant.name} | Metadata: {participant.metadata}"
+    )
 
     # Register data handler for UI context sync and other room events
     ctx.room.on("data_received", agent_instance.handle_data)
 
     # Start background audio
     asyncio.create_task(background_audio.start(room=ctx.room, agent_session=session))
-         
+
+    await agent_instance.wait_for_user_context(timeout=3.0)
     await session.generate_reply(instructions=agent_instance.welcome_message)
 
     # Keep alive
     participant_left = asyncio.Event()
+
     @ctx.room.on("participant_disconnected")
     def on_participant_disconnected(p: rtc.RemoteParticipant):
         if p.identity == participant.identity:
             participant_left.set()
 
-    while ctx.room.connection_state == rtc.ConnectionState.CONN_CONNECTED and not participant_left.is_set():
+    while (
+        ctx.room.connection_state == rtc.ConnectionState.CONN_CONNECTED
+        and not participant_left.is_set()
+    ):
         await asyncio.sleep(1)
+
 
 if __name__ == "__main__":
     cli.run_app(
@@ -110,6 +114,6 @@ if __name__ == "__main__":
             ws_url=settings.LIVEKIT_URL,
             job_memory_warn_mb=1024,
             agent_name="indusnet",
-            entrypoint_fnc=entrypoint 
+            entrypoint_fnc=entrypoint,
         )
     )
