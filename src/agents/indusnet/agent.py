@@ -34,16 +34,7 @@ class IndusNetAgent(BaseAgent):
         self.user_name: Optional[str] = None
         self.user_email: Optional[str] = None
         self._active_elements: list[str] = []
-        self._user_context_ready: asyncio.Event = asyncio.Event()
 
-    @property
-    def welcome_greeting_instruction(self):
-        name = (self.user_name or "").strip()
-
-        if not name or name.lower() == "guest":
-            return "Greet the user professionally and in a friendly manner"
-
-        return f"Greet the user professionally and in a friendly manner with their name first name. *Name: {self.user_name}*"
 
     @function_tool
     async def search_indus_net_knowledge_base(self, context: RunContext, question: str):
@@ -77,7 +68,7 @@ class IndusNetAgent(BaseAgent):
         payload = {
             "user_name": user_name,
             "user_email": user_email,
-            "user_id": str(uuid.uuid4()),
+            "user_id": self.user_id,
         }
         topic = "user.details"
         await self._publish_data_packet(payload, topic)
@@ -109,22 +100,15 @@ class IndusNetAgent(BaseAgent):
 
         if topic == "user.context":
             self.logger.info("📱 User Context Sync received: %s", context_payload)
-            # Fix: User info is nested inside "user_info" key
+
             user_info = context_payload.get("user_info", {})
             self.user_id = user_info.get("user_id")
             self.user_name = user_info.get("user_name")
             self.user_email = user_info.get("user_email")
-            self._user_context_ready.set()
 
             if self.user_name and self.user_name.lower() != "guest":
                 asyncio.create_task(self._update_instructions())
 
-    async def wait_for_user_context(self, timeout: float) -> bool:
-        """Wait for user context to be received."""
-        try:
-            await asyncio.wait_for(self._user_context_ready.wait(), timeout=timeout)
-            return True
-        except asyncio.TimeoutError:
             return False
 
     # ==================== Private Helper Methods ====================
