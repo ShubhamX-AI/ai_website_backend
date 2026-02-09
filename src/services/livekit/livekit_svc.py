@@ -1,8 +1,15 @@
 import uuid
 import json
 import logging
+from contextlib import asynccontextmanager
 from typing import List, Optional
-from livekit.api import LiveKitAPI, ListRoomsRequest
+from livekit.api import (
+    LiveKitAPI,
+    CreateRoomRequest,
+    CreateAgentDispatchRequest,
+    CreateSIPParticipantRequest,
+    ListRoomsRequest
+)
 from livekit import api as lk_api
 from src.core.config import settings
 
@@ -14,23 +21,49 @@ class LiveKitService:
         self.api_secret = settings.LIVEKIT_API_SECRET
         self.url = settings.LIVEKIT_URL
 
-    async def get_rooms(self) -> List[str]:
-        client = LiveKitAPI()
+    @asynccontextmanager
+    async def get_livekit_api(self):
+        """
+        Context manager for LiveKitAPI that handles initialization and cleanup.
+        """
+        lkapi = LiveKitAPI(
+            self.url,
+            self.api_key,
+            self.api_secret,
+        )
         try:
-            rooms = await client.room.list_rooms(ListRoomsRequest())
-            return [room.name for room in rooms.rooms]
-        except Exception as e:
-            logger.error(f"Error listing rooms: {e}")
-            return []
+            yield lkapi
         finally:
-            await client.aclose()
+            await lkapi.aclose()
 
-    async def generate_room_name(self, agent: str) -> str:
-        while True:
-            room_name = f"{agent}-{uuid.uuid4().hex[:8]}"
-            existing_rooms = await self.get_rooms()
-            if room_name not in existing_rooms:
-                return room_name
+
+    # Create livekit room 
+    async def create_room(self, agent: str) -> str:
+        async with self.get_livekit_api() as lkapi:
+            
+            # Create a unique room name with agent name
+            unique_room_name = f"{agent}_{uuid.uuid4().hex[:8]}"
+
+            # Create room
+            room = await lkapi.room.create_room(CreateRoomRequest(name=unique_room_name))
+            logger.info(f"Room created: {room.name}")
+            return room.name
+            
+    
+    # Create agent dispatch
+    async def create_agent_dispatch(self, room_name: str) -> str:
+        async with self.get_livekit_api() as lkapi:
+            
+            # Create agent dispatch
+            agent_dispatch = await lkapi.agent_dispatch.create_dispatch(
+                CreateAgentDispatchRequest(
+                    room=room_name,
+                    agent_name="indusnet",
+                )
+            )
+            # logger.info(f"Agent dispatch created: {agent_dispatch.name}")
+            # return agent_dispatch.name
+
 
     def get_token(self, identity: str, name: str, agent: str, room: Optional[str] = None, email: Optional[str] = None) -> str:
         metadata = {

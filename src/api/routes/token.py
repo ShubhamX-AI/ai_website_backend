@@ -14,14 +14,16 @@ async def get_token(
     name: str = Query("guest"), 
     user_id: str = Query(..., description="Persistent UUID for the user"),
     email: Optional[str] = Query(None),
-    agent: str = Query("web"), 
+    agent: str = Query("indusnet"), 
     room: Optional[str] = Query(None)
 ):
     if agent not in ALLOWED_AGENTS:
         raise HTTPException(status_code=400, detail="Invalid agent")
     
     if not room:
-        room = await livekit_service.generate_room_name(agent=agent)
+        room = await livekit_service.create_room(agent=agent)
+    
+    await livekit_service.create_agent_dispatch(room_name=room)
 
     try:
         # Pass user_id as the identity, and handle name/email in metadata or name field

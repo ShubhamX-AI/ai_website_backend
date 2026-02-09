@@ -1,6 +1,7 @@
 import logging
 from livekit.agents import Agent
 
+
 class BaseAgent(Agent):
     def __init__(self, room, instructions: str) -> None:
         super().__init__(instructions=instructions)
@@ -8,5 +9,5 @@ class BaseAgent(Agent):
         self.logger = logging.getLogger(self.__class__.__name__)
 
     @property
-    def welcome_message(self):
+    def welcome_greeting_instruction(self) -> str:
         return "Hello, how can I help you today?"
