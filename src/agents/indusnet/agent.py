@@ -14,7 +14,6 @@ from src.services.vectordb.vectordb_svc import VectorStoreService
 # Constants
 FRONTEND_CONTEXT = ["ui.context", "user.context"]
 TOPIC_UI_FLASHCARD = "ui.flashcard"
-TOPIC_EMAIL_FORM = "ui.email_form"
 TOPIC_CONTACT_FORM = "ui.contact_form"
 SKIPPED_METADATA_KEYS = ["source_content_focus"]
 
@@ -59,69 +58,6 @@ class IndusNetAgent(BaseAgent):
         )
         return "UI stream published."
 
-    @function_tool
-    async def publish_email_form(
-        self,
-        context: RunContext,
-        user_name: str,
-        user_email: str,
-        email_subject: str,
-        email_body: str,
-    ):
-        """
-        Publish the email draft to the UI for user review.
-
-        Args:
-            user_name: The name of the user.
-            user_email: The email of the user.
-            email_subject: The subject of the email.
-            email_body: The content of the email to be sent.
-        """
-        self.logger.info(f"Publishing email form for: {user_name}")
-
-        payload = {
-            "type": "email_form",
-            "data": {
-                "user_name": user_name,
-                "user_email": user_email,
-                "email_subject": email_subject,
-                "email_body": email_body,
-            },
-        }
-
-        await self._publish_data_packet(payload, TOPIC_EMAIL_FORM)
-        return "Email form published to UI. Ask the user to confirm if they want to send it."
-
-    @function_tool
-    async def publish_contact_form(
-        self,
-        context: RunContext,
-        user_name: str,
-        user_email: str,
-        user_phone: str,
-        contact_details: str,
-    ):
-        """
-        Publish a contact form to the UI for the user to get in touch with the company.
-
-        Args:
-            user_name: The name of the user.
-            user_email: The email of the user.
-            user_phone: The phone number of the user.
-            contact_details: The reason or details the user wants to contact for.
-        """
-        self.logger.info(f"Publishing contact form for: {user_name}")
-
-        payload = {
-            "type": "contact_form",
-            "data": {
-                "user_name": user_name,
-                "user_email": user_email,
-                "user_phone": user_phone,
-                "contact_details": contact_details,
-            },
-        }
-
         await self._publish_data_packet(payload, TOPIC_CONTACT_FORM)
         return "Contact form published to UI. Ask the user to fill in any missing details and confirm."
 
@@ -151,34 +87,6 @@ class IndusNetAgent(BaseAgent):
         await asyncio.sleep(0.5)
 
         return "Contact form submitted successfully. A consultant will reach out soon."
-
-    @function_tool
-    async def send_email(
-        self,
-        context: RunContext,
-        user_name: str,
-        user_email: str,
-        email_subject: str,
-        email_body: str,
-    ):
-        """
-        Send the email after user confirmation.
-
-        Args:
-            user_name: The name of the user.
-            user_email: The email of the user.
-            email_subject: The subject of the email.
-            email_body: The content of the email.
-        """
-        self.logger.info(f"Sending email from {user_name} ({user_email}) | Subject: {email_subject}")
-        
-        # In a real implementation, you would call an email service here.
-        # For now, we mock the sending process.
-        
-        # Simulate processing time or integration
-        await asyncio.sleep(0.5)
-        
-        return "Email sent successfully."
 
     @function_tool
     async def get_user_info(
