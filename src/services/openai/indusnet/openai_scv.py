@@ -23,22 +23,27 @@ class UIAgentFunctions:
         try:
             self.logger.info("Starting UI stream generation with user input: %s", user_input)
             
+            effective_agent_response = agent_response or "No agent response available."
+
+            self.logger.info(
+                "UI Agent inputs — User: %s | Agent Response: %s",
+                user_input,
+                effective_agent_response[:200],
+            )
+
             prompt_content = f"""
-                        ## Database Results
-                        {db_results}
-                        ## User Query
-                        {user_input}
-                        """
+## User's Question
+{user_input}
 
-            if agent_response:
-                prompt_content += f"""
-                        ## Agent Response (Use this to understand the context and Generate new flashcards)
-                        {agent_response}
-                        """
+## Agent's Spoken Response
+{effective_agent_response}
 
-            prompt_content += """
-                        ## Your Task
-                        Generate flashcards for NEW information only. Check active_elements above and skip any content already displayed."""
+## Database Results (Raw Reference)
+{db_results}
+
+## Your Task
+Generate 1 to 4 flashcards for NEW information only. Check active_elements and skip any content already displayed.
+"""
 
             async with self.openai_client.responses.stream(
                 model=self.llm_model,

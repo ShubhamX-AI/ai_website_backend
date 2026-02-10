@@ -36,4 +36,4 @@ class Flashcard(BaseModel):
     image: Optional[FlashcardImage] = None
 
 class UIStreamResponse(BaseModel):
-    cards: List[Flashcard] = Field(default_factory=list)
+    cards: List[Flashcard] = Field(default_factory=list, max_length=4)
