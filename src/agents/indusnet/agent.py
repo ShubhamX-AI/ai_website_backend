@@ -27,7 +27,7 @@ class IndusNetAgent(BaseAgent):
 
         self.ui_agent_functions = UIAgentFunctions()
         self.vector_store = VectorStoreService()
-        self.db_fetch_size = 5
+        self.db_fetch_size = 10
         self.db_results = ""
 
         # Context State

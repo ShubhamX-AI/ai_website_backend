@@ -13,7 +13,7 @@ load_dotenv(override=True)
 class UIAgentFunctions:
     def __init__(self):
         self.openai_client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-        self.llm_model = "o4-mini"
+        self.llm_model = "gpt-5-mini"
         self.logger = logging.getLogger(__name__)
         self.instructions = UI_SYSTEM_INSTRUCTION
 
@@ -45,17 +45,16 @@ class UIAgentFunctions:
 Generate 1 to 4 flashcards for NEW information only. Check active_elements and skip any content already displayed.
 """
 
-            async with self.openai_client.responses.stream(
+            stream = await self.openai_client.chat.completions.create(
                 model=self.llm_model,
-                input=[
+                messages=[
                     {"role": "system", "content": self.instructions},
-                    {
-                        "role": "user",
-                        "content": prompt_content,
-                    },
+                    {"role": "user", "content": prompt_content},
                 ],
-                text_format=UIStreamResponse
-            ) as stream:
+                response_format={"type": "json_object"},
+                stream=True,
+            )
+            async with stream:
                 buffer = ""
 
                 # --- STATES ---
@@ -63,10 +62,9 @@ Generate 1 to 4 flashcards for NEW information only. Check active_elements and s
                 # 1: Parsing Card Objects { ... }
                 state = 0
 
-                async for event in stream:
-                    if event.type == "response.output_text.delta":
-                        chunk = event.delta
-                        buffer += chunk
+                async for chunk in stream:
+                    if chunk.choices[0].delta.content:
+                        buffer += chunk.choices[0].delta.content
 
                         # === STATE 0: LOOK FOR START OF CARDS ARRAY ===
                         if state == 0:

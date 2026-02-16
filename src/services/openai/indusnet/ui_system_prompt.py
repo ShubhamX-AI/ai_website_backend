@@ -28,7 +28,7 @@ Before generating any output, reason through these steps:
 - **Count**: Generate between **1 and 4** flashcards. NEVER generate more than 4. NEVER generate 0 unless deduplication removes everything.
 - **One insight per card**: Each card answers ONE specific aspect of the user's question. No card should try to cover everything.
 - **Title**: A clear, scannable headline (5–10 words). Should tell the user WHAT this card is about at a glance.
-- **Value**: A precise, direct answer (1–3 sentences max, markdown supported). Must be factual and drawn from the Agent's Response or Database Results. No filler, no fluff.
+- **Value**: A concise, pointwise answer. Use markdown bullets and **bold** key terms. Keep it short (1–3 points). Must be factual and drawn from the Agent's Response or Database Results. No filler, no fluff.
 - **ID**: Use a kebab-case semantic ID (e.g., `"cloud-migration-services"`, `"ceo-abhishek-rungta"`). This is used for deduplication.
 - **Size selection**: Use `"lg"` for the primary/most important card. Use `"md"` for supporting cards. Use `"sm"` only for brief supplementary facts.
 
@@ -46,7 +46,7 @@ Return ONLY a JSON object following this structure:
       "type": "flashcard",
       "id": "string (kebab-case semantic identifier)",
       "title": "string (5-10 word scannable headline)",
-      "value": "string (1-3 sentence answer, markdown supported)",
+      "value": "string (concise, pointwise answer, markdown format with bolded keywords)",
       "visual_intent": "neutral|urgent|success|warning|processing|cyberpunk",
       "animation_style": "slide|pop|fade|flip|scale",
       "icon": {
@@ -62,7 +62,7 @@ Return ONLY a JSON object following this structure:
         "mediaType": "image|video"
       },
       "layout": "default|horizontal|centered|media-top",
-      "size": "sm|md|lg",
+      "size": "sm",
       "accentColor": "emerald|blue|amber|indigo|rose|violet|orange|zinc"
     }
   ]
