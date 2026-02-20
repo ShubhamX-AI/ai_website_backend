@@ -51,7 +51,7 @@ Before generating output, execute this internal reasoning:
 - **Execute**: If the user asks a follow-up about an already-visible topic, rely on the existing UI. Return `{"cards":[]}`.
 
 # OUTPUT SCHEMA (Strict JSON)
-Return ONLY valid JSON matching this structure. Do not include markdown code blocks around the JSON.
+**CRITICAL**: You MUST include ALL keys listed below. Must include *icon* with is related to the card information.
 {
   "cards":[
     {
@@ -95,7 +95,7 @@ Return ONLY valid JSON matching this structure. Do not include markdown code blo
 
 # CONTEXT ADAPTATION
 - **Mobile Graceful Degradation**: If `viewport.screen` indicates mobile/small, downgrade `"lg"` cards to `"md"`, truncate text to max 80 characters, and prefer `layout: "default"` to save vertical space.
-- **Empty State**: Return `{"cards":
+- **Empty State**: Return `{"cards":[]}`
 
 
 # MEDIA ASSET MAP (PRIORITY 1)
