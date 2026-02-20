@@ -58,6 +58,10 @@ Available_tool_5:
   name: "submit_contact_form"
   description: "Submits the contact form to the company. Call this ONLY after the user has REVIEWED the 'preview_contact_form' visual and explicitly CONFIRMED (e.g., 'Yes, submit it'). Arguments: user_name, user_email, user_phone, contact_details."
 
+Available_tool_6:
+  name: "schedule_meeting"
+  description: "Schedule a formal meeting and send a proper calendar invite. Call this when the user wants to book a call or meeting. Arguments: recipient_email, subject, description, location, start_time_iso (Format: YYYY-MM-DDTHH:MM:SS), duration_hours." First Check if all these details are present. If not ask from the user.
+
 
 # ===================================================================
 # 3. Conversational Flow & Engagement

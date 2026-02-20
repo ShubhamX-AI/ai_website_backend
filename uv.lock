@@ -22,6 +22,7 @@ dependencies = [
     { name = "chromadb" },
     { name = "fastapi", extra = ["standard"] },
     { name = "gunicorn" },
+    { name = "icalendar" },
     { name = "langchain" },
     { name = "langchain-chroma" },
     { name = "langchain-community" },
@@ -35,6 +36,7 @@ dependencies = [
     { name = "pip-system-certs" },
     { name = "psycopg", extra = ["binary"] },
     { name = "python-dotenv" },
+    { name = "pytz" },
     { name = "sqlalchemy" },
 ]
 
@@ -44,6 +46,7 @@ requires-dist = [
     { name = "chromadb", specifier = ">=1.4.0" },
     { name = "fastapi", extras = ["standard"], specifier = ">=0.128.0" },
     { name = "gunicorn", specifier = ">=23.0.0" },
+    { name = "icalendar", specifier = ">=7.0.1" },
     { name = "langchain", specifier = ">=1.2.7" },
     { name = "langchain-chroma", specifier = ">=1.1.0" },
     { name = "langchain-community", specifier = ">=0.4.1" },
@@ -57,6 +60,7 @@ requires-dist = [
     { name = "pip-system-certs", specifier = ">=5.3" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.3.2" },
     { name = "python-dotenv", specifier = ">=1.2.1" },
+    { name = "pytz", specifier = ">=2025.2" },
     { name = "sqlalchemy", specifier = ">=2.0.46" },
 ]
 
@@ -1126,6 +1130,20 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/cc/3f/2c29224acb2e2df4d2046e4c73ee2662023c58ff5b113c4c1adac0886c43/humanfriendly-10.0.tar.gz", hash = "sha256:6b0b831ce8f15f7300721aa49829fc4e83921a9a301cc7f606be6686a2288ddc", size = 360702, upload-time = "2021-09-17T21:40:43.31Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/f0/0f/310fb31e39e2d734ccaa2c0fb981ee41f7bd5056ce9bc29b2248bd569169/humanfriendly-10.0-py2.py3-none-any.whl", hash = "sha256:1697e1a8a8f550fd43c2865cd84542fc175a61dcb779b6fee18cf6b6ccba1477", size = 86794, upload-time = "2021-09-17T21:40:39.897Z" },
+]
+
+[[package]]
+name = "icalendar"
+version = "7.0.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "python-dateutil" },
+    { name = "typing-extensions", marker = "python_full_version < '3.13'" },
+    { name = "tzdata" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/fa/14/ca82c5f5600518bbfcdceafbdaa2ba1acf9abe657ec5ed285075b12651ff/icalendar-7.0.1.tar.gz", hash = "sha256:68a6295f31ed907885ae79f10336b53ba067e0a66075b6a956abbe5e89ac7b39", size = 439216, upload-time = "2026-02-17T21:43:26.437Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/1e/c6/2342252c007d004e8532271ed146139e4bc7d95724e7f1ea582bb7355f95/icalendar-7.0.1-py3-none-any.whl", hash = "sha256:1f577af3e4d022a701aa98f9366dd524f0f1134b90c73c28493f06d5371901d5", size = 436952, upload-time = "2026-02-17T21:43:25.238Z" },
 ]
 
 [[package]]
@@ -3052,6 +3070,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/94/01/979e98d542a70714b0cb2b6728ed0b7c46792b695e3eaec3e20711271ca3/python_multipart-0.0.22.tar.gz", hash = "sha256:7340bef99a7e0032613f56dc36027b959fd3b30a787ed62d310e951f7c3a3a58", size = 37612, upload-time = "2026-01-25T10:15:56.219Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/1b/d0/397f9626e711ff749a95d96b7af99b9c566a9bb5129b8e4c10fc4d100304/python_multipart-0.0.22-py3-none-any.whl", hash = "sha256:2b2cd894c83d21bf49d702499531c7bafd057d730c201782048f7945d82de155", size = 24579, upload-time = "2026-01-25T10:15:54.811Z" },
+]
+
+[[package]]
+name = "pytz"
+version = "2025.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/f8/bf/abbd3cdfb8fbc7fb3d4d38d320f2441b1e7cbe29be4f23797b4a2b5d8aac/pytz-2025.2.tar.gz", hash = "sha256:360b9e3dbb49a209c21ad61809c7fb453643e048b38924c765813546746e81c3", size = 320884, upload-time = "2025-03-25T02:25:00.538Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/81/c4/34e93fe5f5429d7570ec1fa436f1986fb1f00c3e0f43a589fe2bbcd22c3f/pytz-2025.2-py2.py3-none-any.whl", hash = "sha256:5ddf76296dd8c44c26eb8f4b6f35488f3ccbf6fbbd7adee0b7262d43f0ec2f00", size = 509225, upload-time = "2025-03-25T02:24:58.468Z" },
 ]
 
 [[package]]
