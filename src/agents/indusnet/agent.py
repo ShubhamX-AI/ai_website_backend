@@ -1,6 +1,7 @@
 import json
 import asyncio
 import uuid
+import os
 from typing import Optional
 from livekit import rtc
 from livekit.agents import function_tool, RunContext
@@ -14,10 +15,14 @@ from src.services.mail.calender_invite import send_calendar_invite
 import datetime as dt
 
 # Constants
-FRONTEND_CONTEXT = ["ui.context", "user.context"]
+FRONTEND_CONTEXT = ["ui.context", "user.context", "user.location"]
 TOPIC_UI_FLASHCARD = "ui.flashcard"
 TOPIC_CONTACT_FORM = "ui.contact_form"
+TOPIC_USER_LOCATION = "user.location"          # frontend → backend: GPS result
+TOPIC_UI_LOCATION_REQUEST = "ui.location_request"  # backend → frontend: request GPS
 SKIPPED_METADATA_KEYS = ["source_content_focus"]
+
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY", "")
 
 
 class IndusNetAgent(BaseAgent):
@@ -38,6 +43,13 @@ class IndusNetAgent(BaseAgent):
         self.user_email: Optional[str] = None
         self.user_phone: Optional[str] = None
         self._active_elements: list[str] = []
+
+        # Location State
+        self._location_status: Optional[str] = None   # "success" | "denied" | "unsupported"
+        self._user_lat: Optional[float] = None
+        self._user_lng: Optional[float] = None
+        self._location_accuracy: Optional[float] = None
+        self._location_event = asyncio.Event()          # fired when frontend responds
 
 
     @function_tool
@@ -204,6 +216,140 @@ class IndusNetAgent(BaseAgent):
         await self._publish_data_packet(payload, topic)
         return "User information published."
 
+    @function_tool
+    async def request_user_location(self, context: RunContext):
+        """
+        Ask the frontend to share the user's current GPS location.
+        The browser will prompt the user for permission. Returns the location
+        status once the frontend responds (success, denied, or unsupported).
+        Wait for this tool's result before calling calculate_distance_to_destination.
+        """
+        self.logger.info("📍 Requesting user location from frontend")
+
+        # Reset previous state and the event flag so we wait for a fresh reply
+        self._location_status = None
+        self._user_lat = None
+        self._user_lng = None
+        self._location_accuracy = None
+        self._location_event.clear()
+
+        # Tell the frontend to fire the Geolocation API.
+        # The frontend listens on topic 'ui.location_request' OR checks data.type === 'location_request'.
+        await self._publish_data_packet(
+            {"type": "location_request"},
+            TOPIC_UI_LOCATION_REQUEST,
+        )
+
+        # Wait up to 15 s for the frontend to respond
+        try:
+            await asyncio.wait_for(self._location_event.wait(), timeout=15.0)
+        except asyncio.TimeoutError:
+            return "Location request timed out. The user may not have responded to the browser prompt."
+
+        if self._location_status == "success":
+            accuracy_note = (
+                f" (accuracy: ±{self._location_accuracy:.0f} m)"
+                if self._location_accuracy is not None
+                else ""
+            )
+            return (
+                f"Location obtained: lat={self._user_lat}, lng={self._user_lng}{accuracy_note}. "
+                "You can now call calculate_distance_to_destination."
+            )
+        elif self._location_status == "denied":
+            return "The user denied location access or the request timed out on the browser side. Cannot calculate distance without location."
+        elif self._location_status == "unsupported":
+            return "The user's browser does not support Geolocation. Cannot calculate distance."
+        else:
+            return "Unknown location status received from the frontend."
+
+    @function_tool
+    async def calculate_distance_to_destination(
+        self, context: RunContext, destination: str
+    ):
+        """
+        Calculate the driving distance and estimated travel time from the user's
+        current GPS location to a destination address or landmark.
+
+        IMPORTANT: You MUST call request_user_location first and confirm a
+        'success' status before calling this tool.
+
+        Args:
+            destination: The destination address or place name (e.g., "Indus Net Technologies, Kolkata").
+        """
+        if self._location_status != "success" or self._user_lat is None or self._user_lng is None:
+            return (
+                "I don't have the user's location yet. "
+                "Please call request_user_location first and ensure access was granted."
+            )
+
+        if not GOOGLE_API_KEY:
+            return "Google Maps API key is not configured. Cannot calculate distance."
+
+        self.logger.info(
+            f"📐 Calculating distance from ({self._user_lat}, {self._user_lng}) to '{destination}'"
+        )
+
+        import aiohttp
+
+        try:
+            async with aiohttp.ClientSession() as session:
+                # 1️⃣ Geocode the destination to get its lat/lng
+                geo_params = {
+                    "address": destination,
+                    "key": GOOGLE_API_KEY,
+                }
+                async with session.get(
+                    "https://maps.googleapis.com/maps/api/geocode/json",
+                    params=geo_params,
+                ) as geo_resp:
+                    geo_data = await geo_resp.json()
+
+                if not geo_data.get("results"):
+                    return f"Could not geocode '{destination}'. Please check the address and try again."
+
+                dest_loc = geo_data["results"][0]["geometry"]["location"]
+                dest_lat = dest_loc["lat"]
+                dest_lng = dest_loc["lng"]
+                formatted_address = geo_data["results"][0].get("formatted_address", destination)
+
+                # 2️⃣ Distance Matrix: driving distance + duration
+                dist_params = {
+                    "origins": f"{self._user_lat},{self._user_lng}",
+                    "destinations": f"{dest_lat},{dest_lng}",
+                    "key": GOOGLE_API_KEY,
+                    "mode": "driving",
+                    "units": "metric",
+                }
+                async with session.get(
+                    "https://maps.googleapis.com/maps/api/distancematrix/json",
+                    params=dist_params,
+                ) as dist_resp:
+                    dist_data = await dist_resp.json()
+
+                element = dist_data["rows"][0]["elements"][0]
+                if element.get("status") != "OK":
+                    return (
+                        f"Could not calculate route to '{formatted_address}'. "
+                        f"Google Maps returned status: {element.get('status', 'UNKNOWN')}."
+                    )
+
+                distance_text = element["distance"]["text"]
+                duration_text = element["duration"]["text"]
+
+                self.logger.info(
+                    f"✅ Distance to '{formatted_address}': {distance_text} ({duration_text})"
+                )
+
+                return (
+                    f"The destination '{formatted_address}' is approximately {distance_text} away "
+                    f"and will take around {duration_text} by car from your current location."
+                )
+
+        except Exception as e:
+            self.logger.error(f"❌ Distance calculation failed: {e}")
+            return "An error occurred while calculating the distance. Please try again."
+
     # Handle data from the frontend
     def handle_data(self, data: rtc.DataPacket):
         """Handle incoming data packets from the room."""
@@ -240,6 +386,28 @@ class IndusNetAgent(BaseAgent):
             if self.user_name and self.user_name.lower() != "guest":
                 asyncio.create_task(self._update_instructions())
 
+            return False
+
+        if topic == "user.location":
+            status = context_payload.get("status")
+            self.logger.info("📍 Location packet received — status: %s", status)
+
+            self._location_status = status
+
+            if status == "success":
+                self._user_lat = context_payload.get("latitude")
+                self._user_lng = context_payload.get("longitude")
+                self._location_accuracy = context_payload.get("accuracy")
+                self.logger.info(
+                    "📍 Location: lat=%s, lng=%s, accuracy=%s m",
+                    self._user_lat, self._user_lng, self._location_accuracy,
+                )
+            else:
+                error = context_payload.get("error", "unknown error")
+                self.logger.warning("📍 Location not available: %s", error)
+
+            # Unblock the coroutine waiting in request_user_location
+            self._location_event.set()
             return False
 
     # ==================== Private Helper Methods ====================
