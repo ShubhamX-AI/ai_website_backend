@@ -12,6 +12,7 @@ from src.agents.prompts.humanization import TTS_HUMANIFICATION_CARTESIA
 from src.services.openai.indusnet.openai_scv import UIAgentFunctions
 from src.services.vectordb.vectordb_svc import VectorStoreService
 from src.services.mail.calender_invite import send_calendar_invite
+from src.services.map.googlemap.services import GoogleMapService
 import datetime as dt
 
 # Constants
@@ -21,8 +22,6 @@ TOPIC_CONTACT_FORM = "ui.contact_form"
 TOPIC_USER_LOCATION = "user.location"          # frontend → backend: GPS result
 TOPIC_UI_LOCATION_REQUEST = "ui.location_request"  # backend → frontend: request GPS
 SKIPPED_METADATA_KEYS = ["source_content_focus"]
-
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY", "")
 
 
 class IndusNetAgent(BaseAgent):
@@ -34,6 +33,7 @@ class IndusNetAgent(BaseAgent):
 
         self.ui_agent_functions = UIAgentFunctions()
         self.vector_store = VectorStoreService()
+        self.google_map_service = GoogleMapService()
         self.db_fetch_size = 10
         self.db_results = ""
 
@@ -252,8 +252,13 @@ class IndusNetAgent(BaseAgent):
                 if self._location_accuracy is not None
                 else ""
             )
+
+            # Get location of the user
+            location = await self.google_map_service.get_location(self._user_lat, self._user_lng)
+            formatted_address = location.get("formatted_address", f"{self._user_lat},{self._user_lng}")
             return (
                 f"Location obtained: lat={self._user_lat}, lng={self._user_lng}{accuracy_note}. "
+                f"Address of the user: {formatted_address}. "
                 "You can now call calculate_distance_to_destination."
             )
         elif self._location_status == "denied":
@@ -283,68 +288,35 @@ class IndusNetAgent(BaseAgent):
                 "Please call request_user_location first and ensure access was granted."
             )
 
-        if not GOOGLE_API_KEY:
-            return "Google Maps API key is not configured. Cannot calculate distance."
-
         self.logger.info(
             f"📐 Calculating distance from ({self._user_lat}, {self._user_lng}) to '{destination}'"
         )
 
-        import aiohttp
-
         try:
-            async with aiohttp.ClientSession() as session:
-                # 1️⃣ Geocode the destination to get its lat/lng
-                geo_params = {
-                    "address": destination,
-                    "key": GOOGLE_API_KEY,
-                }
-                async with session.get(
-                    "https://maps.googleapis.com/maps/api/geocode/json",
-                    params=geo_params,
-                ) as geo_resp:
-                    geo_data = await geo_resp.json()
+            result = await self.google_map_service.calculate_distance_and_duration(
+                origin_lat=self._user_lat,
+                origin_lng=self._user_lng,
+                destination=destination
+            )
 
-                if not geo_data.get("results"):
-                    return f"Could not geocode '{destination}'. Please check the address and try again."
+            if not result:
+                return f"Could not geocode '{destination}'. Please check the address and try again."
 
-                dest_loc = geo_data["results"][0]["geometry"]["location"]
-                dest_lat = dest_loc["lat"]
-                dest_lng = dest_loc["lng"]
-                formatted_address = geo_data["results"][0].get("formatted_address", destination)
+            if "error" in result:
+                return f"The destination '{result['formatted_address']}' was found, but: {result['error']}."
 
-                # 2️⃣ Distance Matrix: driving distance + duration
-                dist_params = {
-                    "origins": f"{self._user_lat},{self._user_lng}",
-                    "destinations": f"{dest_lat},{dest_lng}",
-                    "key": GOOGLE_API_KEY,
-                    "mode": "driving",
-                    "units": "metric",
-                }
-                async with session.get(
-                    "https://maps.googleapis.com/maps/api/distancematrix/json",
-                    params=dist_params,
-                ) as dist_resp:
-                    dist_data = await dist_resp.json()
+            formatted_address = result["formatted_address"]
+            distance_text = result["distance_text"]
+            duration_text = result["duration_text"]
 
-                element = dist_data["rows"][0]["elements"][0]
-                if element.get("status") != "OK":
-                    return (
-                        f"Could not calculate route to '{formatted_address}'. "
-                        f"Google Maps returned status: {element.get('status', 'UNKNOWN')}."
-                    )
+            self.logger.info(
+                f"✅ Distance to '{formatted_address}': {distance_text} ({duration_text})"
+            )
 
-                distance_text = element["distance"]["text"]
-                duration_text = element["duration"]["text"]
-
-                self.logger.info(
-                    f"✅ Distance to '{formatted_address}': {distance_text} ({duration_text})"
-                )
-
-                return (
-                    f"The destination '{formatted_address}' is approximately {distance_text} away "
-                    f"and will take around {duration_text} by car from your current location."
-                )
+            return (
+                f"The destination '{formatted_address}' is approximately {distance_text} away "
+                f"and will take around {duration_text} by car from your current location."
+            )
 
         except Exception as e:
             self.logger.error(f"❌ Distance calculation failed: {e}")
