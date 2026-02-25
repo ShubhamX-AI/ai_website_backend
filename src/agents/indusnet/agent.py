@@ -19,8 +19,9 @@ import datetime as dt
 FRONTEND_CONTEXT = ["ui.context", "user.context", "user.location"]
 TOPIC_UI_FLASHCARD = "ui.flashcard"
 TOPIC_CONTACT_FORM = "ui.contact_form"
-TOPIC_USER_LOCATION = "user.location"          # frontend → backend: GPS result
+TOPIC_USER_LOCATION = "user.location"  # frontend → backend: GPS result
 TOPIC_UI_LOCATION_REQUEST = "ui.location_request"  # backend → frontend: request GPS
+TOPIC_GLOBAL_PRESENCE = "ui.global_presense"
 SKIPPED_METADATA_KEYS = ["source_content_focus"]
 
 
@@ -45,13 +46,14 @@ class IndusNetAgent(BaseAgent):
         self._active_elements: list[str] = []
 
         # Location State
-        self._location_status: Optional[str] = None   # "success" | "denied" | "unsupported"
+        self._location_status: Optional[str] = (
+            None  # "success" | "denied" | "unsupported"
+        )
         self._user_lat: Optional[float] = None
         self._user_lng: Optional[float] = None
         self._user_address: Optional[str] = None
         self._location_accuracy: Optional[float] = None
-        self._location_event = asyncio.Event()          # fired when frontend responds
-
+        self._location_event = asyncio.Event()  # fired when frontend responds
 
     @function_tool
     async def search_indus_net_knowledge_base(self, context: RunContext, question: str):
@@ -74,6 +76,32 @@ class IndusNetAgent(BaseAgent):
         )
         return "UI stream published."
 
+    @function_tool
+    async def publisg_gloabl_pesense(
+        self, context: RunContext, user_input: str = "global presence"
+    ) -> str:
+        """Publish Indus Net global presence details via data packet."""
+        self.logger.info("Publishing global presence details via data packet")
+
+        payload = {
+            "type": "global_presence",
+            "data": {
+                "regions": {
+                    "USA": "1310 S Vista Ave Ste 28, Boise, Idaho – 83705",
+                    "Canada": "120 Adelaide Street West, Suite 2500, M5H 1T1",
+                    "UK": "13 More London Riverside, London SE1 2RE",
+                    "Poland": "BARTYCKA 22B M21A, 00-716 WARSZAWA",
+                    "Singapore": "Indus Net Technologies PTE Ltd., 60 Paya Lebar Road, #09-43 Paya Lebar Square – 409051",
+                },
+                "headquarters": {
+                    "India": "4th Floor, SDF Building Saltlake Electronic Complex, Kolkata, West Bengal 700091",
+                    "India": "4th Floor, Block-2b, ECOSPACE BUSINESS PARK, AA II, Newtown, Chakpachuria, West Bengal 700160",
+                },
+            },
+        }
+
+        await self._publish_data_packet(payload, TOPIC_GLOBAL_PRESENCE)
+        return "Global presence data published."
 
     @function_tool
     async def preview_contact_form(
@@ -191,17 +219,23 @@ class IndusNetAgent(BaseAgent):
             description,
             location,
             start_time,
-            duration_hours
+            duration_hours,
         )
 
         if success:
-            return f"Meeting '{subject}' scheduled and invite sent to {recipient_email}."
+            return (
+                f"Meeting '{subject}' scheduled and invite sent to {recipient_email}."
+            )
         else:
             return f"Failed to send the meeting invite. Please check the logs."
 
     @function_tool
     async def get_user_info(
-        self, context: RunContext, user_name: str, user_email: str = "", user_phone: str = ""
+        self,
+        context: RunContext,
+        user_name: str,
+        user_email: str = "",
+        user_phone: str = "",
     ):
         """Get user information."""
         self.logger.info(f"Retrieving user information for: {user_name}")
@@ -255,8 +289,14 @@ class IndusNetAgent(BaseAgent):
             )
 
             # Get location of the user
-            location = await self.google_map_service.get_current_location(self._user_lat, self._user_lng)
-            self._user_address = location.get("formatted_address", f"{self._user_lat},{self._user_lng}") if location else f"{self._user_lat},{self._user_lng}"
+            location = await self.google_map_service.get_current_location(
+                self._user_lat, self._user_lng
+            )
+            self._user_address = (
+                location.get("formatted_address", f"{self._user_lat},{self._user_lng}")
+                if location
+                else f"{self._user_lat},{self._user_lng}"
+            )
             return (
                 f"Location obtained: lat={self._user_lat}, lng={self._user_lng}{accuracy_note}. "
                 f"Address of the user: {self._user_address}. "
@@ -283,7 +323,11 @@ class IndusNetAgent(BaseAgent):
         Args:
             destination: The destination address or place name (e.g., "Indus Net Technologies, Kolkata").
         """
-        if self._location_status != "success" or self._user_lat is None or self._user_lng is None:
+        if (
+            self._location_status != "success"
+            or self._user_lat is None
+            or self._user_lng is None
+        ):
             return (
                 "I don't have the user's location yet. "
                 "Please call request_user_location first and ensure access was granted."
@@ -297,7 +341,7 @@ class IndusNetAgent(BaseAgent):
             result = await self.google_map_service.get_directions(
                 origin_lat=self._user_lat,
                 origin_lng=self._user_lng,
-                destination=destination
+                destination=destination,
             )
 
             if not result:
@@ -311,20 +355,25 @@ class IndusNetAgent(BaseAgent):
             duration_text = result["duration_text"]
             polyline = result["polyline"]
 
-            self.logger.info(f"✅ Distance to '{formatted_address}': {distance_text} ({duration_text})")
+            self.logger.info(
+                f"✅ Distance to '{formatted_address}': {distance_text} ({duration_text})"
+            )
 
             # Publish polyline to the frontend
-            await self._publish_data_packet({
-                "type": "map.polyline",
-                "data": {
-                    "polyline": polyline,
-                    "origin": self._user_address,
-                    "destination": formatted_address,
-                    "travelMode": "driving",
-                    "distance": distance_text,
-                    "duration": duration_text
-                }
-            }, TOPIC_UI_LOCATION_REQUEST)
+            await self._publish_data_packet(
+                {
+                    "type": "map.polyline",
+                    "data": {
+                        "polyline": polyline,
+                        "origin": self._user_address,
+                        "destination": formatted_address,
+                        "travelMode": "driving",
+                        "distance": distance_text,
+                        "duration": duration_text,
+                    },
+                },
+                TOPIC_UI_LOCATION_REQUEST,
+            )
 
             return (
                 f"The destination '{formatted_address}' is approximately {distance_text} away "
@@ -385,7 +434,9 @@ class IndusNetAgent(BaseAgent):
                 self._location_accuracy = context_payload.get("accuracy")
                 self.logger.info(
                     "📍 Location: lat=%s, lng=%s, accuracy=%s m",
-                    self._user_lat, self._user_lng, self._location_accuracy,
+                    self._user_lat,
+                    self._user_lng,
+                    self._location_accuracy,
                 )
             else:
                 error = context_payload.get("error", "unknown error")

@@ -27,6 +27,7 @@ tool_rules:
   - rule: "Natural Lead-in — NEVER call a tool in silence. You MUST use a filler phrase (see 'latency_management') to maintain a natural conversation while the system works."
   - rule: "The Search-Synthesize-Show Sequence — When information is missing: 1. Speak a filler phrase. 2. Call 'search_indus_net_knowledge_base'. 3. Review the results. 4. Call 'publish_ui_stream' with a concise, high-impact summary of the search results (NOT the raw results). 5. Narrate the visual to the user."
   - rule: "Contextual Accuracy — If the search tool returns no results or irrelevant data, admit it gracefully and immediately suggest the 'Contact Form' workflow."
+  - rule: "Global Presence Trigger — If the user asks about global presence, locations, office presence, where we are, or geography, speak a filler phrase and call 'publisg_gloabl_pesense' immediately. Do NOT call the vector DB."
 
 latency_management:
   filler_phrases:
@@ -69,6 +70,10 @@ Available_tool_7:
 Available_tool_8:
   name: "calculate_distance_to_destination"
   description: "Calculates driving distance and travel time from the user's GPS location AND renders the route map on the user's screen. Argument: destination (The FULL official address of the Indus Net office). ONLY call this after getting the user's location and their choice of which office to visit."
+
+Available_tool_9:
+  name: "publisg_gloabl_pesense"
+  description: "Publishes Indus Net global presence details via data packet on topic 'global presense'. Use this when asked about global presence or locations."
 
 
 # ===================================================================
@@ -143,6 +148,17 @@ distance_workflow:
 OFFICE_LOCATIONS_REFERENCE:
   - Kolkata sector 5: "4th Floor, SDF Building Saltlake Electronic Complex, Kolkata, West Bengal 700091"
   - Kolkata sector newtown: "4th Floor, Block-2b, ECOSPACE BUSINESS PARK, AA II, Newtown, Chakpachuria, West Bengal 700160"
+
+# ===================================================================
+# 10. Global Presence (Reference)
+# ===================================================================
+GLOBAL_PRESENCE_REFERENCE:
+  - USA
+  - Canada
+  - UK
+  - Poland
+  - Singapore
+  - Headquarters: Kolkata, India
 
 # ===================================================================
 # 7. Core Constraints
