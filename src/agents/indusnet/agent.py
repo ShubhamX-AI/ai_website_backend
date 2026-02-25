@@ -254,7 +254,7 @@ class IndusNetAgent(BaseAgent):
             )
 
             # Get location of the user
-            location = await self.google_map_service.get_location(self._user_lat, self._user_lng)
+            location = await self.google_map_service.get_current_location(self._user_lat, self._user_lng)
             formatted_address = location.get("formatted_address", f"{self._user_lat},{self._user_lng}")
             return (
                 f"Location obtained: lat={self._user_lat}, lng={self._user_lng}{accuracy_note}. "
@@ -293,7 +293,7 @@ class IndusNetAgent(BaseAgent):
         )
 
         try:
-            result = await self.google_map_service.calculate_distance_and_duration(
+            result = await self.google_map_service.get_directions(
                 origin_lat=self._user_lat,
                 origin_lng=self._user_lng,
                 destination=destination
@@ -308,10 +308,17 @@ class IndusNetAgent(BaseAgent):
             formatted_address = result["formatted_address"]
             distance_text = result["distance_text"]
             duration_text = result["duration_text"]
+            polyline = result["polyline"]
 
-            self.logger.info(
-                f"✅ Distance to '{formatted_address}': {distance_text} ({duration_text})"
-            )
+            self.logger.info(f"✅ Distance to '{formatted_address}': {distance_text} ({duration_text})")
+
+            # Publish polyline to the frontend
+            await self._publish_data_packet({
+                "type": "map.polyline",
+                "data": {
+                    "polyline": polyline
+                }
+            }, TOPIC_UI_LOCATION_REQUEST)
 
             return (
                 f"The destination '{formatted_address}' is approximately {distance_text} away "
