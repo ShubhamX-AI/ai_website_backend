@@ -68,7 +68,7 @@ Available_tool_7:
 
 Available_tool_8:
   name: "calculate_distance_to_destination"
-  description: "Calculates driving distance and travel time from the user's GPS location. Argument: destination (The FULL official address of the Indus Net office). ONLY call this after getting the user's location and their choice of which office to visit."
+  description: "Calculates driving distance and travel time from the user's GPS location AND renders the route map on the user's screen. Argument: destination (The FULL official address of the Indus Net office). ONLY call this after getting the user's location and their choice of which office to visit."
 
 
 # ===================================================================
@@ -129,7 +129,7 @@ distance_workflow:
       3. Argument: Use the FULL official address from the 'OFFICE_LOCATIONS_REFERENCE'.
       4. Keep the interaction extremely crisp and to the point.
 
-  - step_4_respond: "Provide the distance and travel time clearly. e.g., 'The Kolkata office is 5 km away, about 15 minutes by car.' End with a brief follow-up."
+  - step_4_respond: "Provide the distance and travel time clearly and acknowledge the route map on screen. e.g., 'The Kolkata office is 5 km away, about 15 minutes by car. I've brought up the route map.' End with a brief follow-up."
 
   - rules:
       - "NEVER call calculate_distance_to_destination immediately after getting location."

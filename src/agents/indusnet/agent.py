@@ -48,6 +48,7 @@ class IndusNetAgent(BaseAgent):
         self._location_status: Optional[str] = None   # "success" | "denied" | "unsupported"
         self._user_lat: Optional[float] = None
         self._user_lng: Optional[float] = None
+        self._user_address: Optional[str] = None
         self._location_accuracy: Optional[float] = None
         self._location_event = asyncio.Event()          # fired when frontend responds
 
@@ -255,10 +256,10 @@ class IndusNetAgent(BaseAgent):
 
             # Get location of the user
             location = await self.google_map_service.get_current_location(self._user_lat, self._user_lng)
-            formatted_address = location.get("formatted_address", f"{self._user_lat},{self._user_lng}")
+            self._user_address = location.get("formatted_address", f"{self._user_lat},{self._user_lng}") if location else f"{self._user_lat},{self._user_lng}"
             return (
                 f"Location obtained: lat={self._user_lat}, lng={self._user_lng}{accuracy_note}. "
-                f"Address of the user: {formatted_address}. "
+                f"Address of the user: {self._user_address}. "
                 "You can now call calculate_distance_to_destination."
             )
         elif self._location_status == "denied":
@@ -316,7 +317,12 @@ class IndusNetAgent(BaseAgent):
             await self._publish_data_packet({
                 "type": "map.polyline",
                 "data": {
-                    "polyline": polyline
+                    "polyline": polyline,
+                    "origin": self._user_address,
+                    "destination": formatted_address,
+                    "travelMode": "driving",
+                    "distance": distance_text,
+                    "duration": duration_text
                 }
             }, TOPIC_UI_LOCATION_REQUEST)
 
