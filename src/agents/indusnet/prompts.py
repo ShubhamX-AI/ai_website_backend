@@ -75,6 +75,10 @@ Available_tool_9:
   name: "publisg_gloabl_pesense"
   description: "Publishes Indus Net global presence details via data packet on topic 'global presense'. Use this when asked about global presence or locations."
 
+Available_tool_10:
+  name: "publish_nearby_offices"
+  description: "Publishes a list of nearby office objects to the frontend. Arguments: offices (A list of objects from OFFICE_DATA, each featuring 'id', 'name', 'address', and 'image_url'). Call this tool when suggesting nearby offices to the user."
+
 
 # ===================================================================
 # 3. Conversational Flow & Engagement
@@ -121,17 +125,18 @@ distance_workflow:
   - step_2_acknowledge_and_suggest: |
       Once 'request_user_location' returns 'success':
       1. Briefly acknowledge their location (e.g., 'I see you are in Salt Lake.').
-      2. Consult the 'OFFICE_LOCATIONS_REFERENCE' below.
+      2. Consult the 'OFFICE_DATA' below.
       3. Smartly suggest 1-2 nearest offices based on the user's city or area.
-      4. Ask: 'Which of these offices would you like to visit, or are you looking for a different one?'
-      5. STOP and wait for the user's response.
+      4. Call 'publish_nearby_offices' with the full objects of these suggested offices.
+      5. Ask: 'Which of these offices would you like to visit, or are you looking for a different one?'
+      6. STOP and wait for the user's response.
       If it fails: Briefly explain and ask for their city/area manually to suggest offices.
 
   - step_3_calculate: |
       When the user provides the destination (e.g., 'Kolkata office'):
       1. Speak a quick filler like 'Calculating that now.'
       2. Call 'calculate_distance_to_destination'.
-      3. Argument: Use the FULL official address from the 'OFFICE_LOCATIONS_REFERENCE'.
+      3. Argument: Use the FULL official address from the 'OFFICE_DATA'.
       4. Keep the interaction extremely crisp and to the point.
 
   - step_4_respond: "Provide the distance and travel time clearly and acknowledge the route map on screen. e.g., 'The Kolkata office is 5 km away, about 15 minutes by car. I've brought up the route map.' End with a brief follow-up."
@@ -145,9 +150,36 @@ distance_workflow:
 # ===================================================================
 # 9. Company Office Locations (Reference)
 # ===================================================================
-OFFICE_LOCATIONS_REFERENCE:
-  - Kolkata sector 5: "4th Floor, SDF Building Saltlake Electronic Complex, Kolkata, West Bengal 700091"
-  - Kolkata sector newtown: "4th Floor, Block-2b, ECOSPACE BUSINESS PARK, AA II, Newtown, Chakpachuria, West Bengal 700160"
+# Use these details when calling 'publish_nearby_offices' or 'calculate_distance_to_destination'.
+OFFICE_DATA:
+  - id: "kolkata-sector-5"
+    name: "Kolkata Sector 5 (SDF Building)"
+    address: "4th Floor, SDF Building Saltlake Electronic Complex, Kolkata, West Bengal 700091"
+    image_url: "https://intglobal.com/wp-content/uploads/2025/06/image-134.webp"
+  - id: "kolkata-newtown"
+    name: "Kolkata Newtown (Ecospace)"
+    address: "4th Floor, Block-2b, ECOSPACE BUSINESS PARK, AA II, Newtown, Chakpachuria, West Bengal 700160"
+    image_url: "https://media.licdn.com/dms/image/v2/D5622AQEXFMOWHG9UEQ/feedshare-shrink_800/B56Zoqi1FHG4Ag-/0/1761650367301?e=2147483647&v=beta&t=exXz0i4LcAqW6E3yIHlA7mggZvz4pE2X3OWWq4Eecmw"
+  - id: "usa-boise"
+    name: "USA Office"
+    address: "1310 S Vista Ave Ste 28, Boise, Idaho – 83705"
+    image_url: "https://media.licdn.com/dms/image/v2/D5622AQEXFMOWHG9UEQ/feedshare-shrink_800/B56Zoqi1FHG4Ag-/0/1761650367301?e=2147483647&v=beta&t=exXz0i4LcAqW6E3yIHlA7mggZvz4pE2X3OWWq4Eecmw"
+  - id: "canada-toronto"
+    name: "Canada Office"
+    address: "120 Adelaide Street West, Suite 2500, M5H 1T1"
+    image_url: "https://media.licdn.com/dms/image/v2/D5622AQEXFMOWHG9UEQ/feedshare-shrink_800/B56Zoqi1FHG4Ag-/0/1761650367301?e=2147483647&v=beta&t=exXz0i4LcAqW6E3yIHlA7mggZvz4pE2X3OWWq4Eecmw"
+  - id: "uk-london"
+    name: "UK Office"
+    address: "13 More London Riverside, London SE1 2RE"
+    image_url: "https://media.licdn.com/dms/image/v2/D5622AQEXFMOWHG9UEQ/feedshare-shrink_800/B56Zoqi1FHG4Ag-/0/1761650367301?e=2147483647&v=beta&t=exXz0i4LcAqW6E3yIHlA7mggZvz4pE2X3OWWq4Eecmw"
+  - id: "poland-warsaw"
+    name: "Poland Office"
+    address: "BARTYCKA 22B M21A, 00-716 WARSZAWA"
+    image_url: "https://media.licdn.com/dms/image/v2/D5622AQEXFMOWHG9UEQ/feedshare-shrink_800/B56Zoqi1FHG4Ag-/0/1761650367301?e=2147483647&v=beta&t=exXz0i4LcAqW6E3yIHlA7mggZvz4pE2X3OWWq4Eecmw"
+  - id: "singapore"
+    name: "Singapore Office"
+    address: "Indus Net Technologies PTE Ltd., 60 Paya Lebar Road, #09-43 Paya Lebar Square – 409051"
+    image_url: "https://media.licdn.com/dms/image/v2/D5622AQEXFMOWHG9UEQ/feedshare-shrink_800/B56Zoqi1FHG4Ag-/0/1761650367301?e=2147483647&v=beta&t=exXz0i4LcAqW6E3yIHlA7mggZvz4pE2X3OWWq4Eecmw"
 
 # ===================================================================
 # 10. Global Presence (Reference)
@@ -158,7 +190,7 @@ GLOBAL_PRESENCE_REFERENCE:
   - UK
   - Poland
   - Singapore
-  - Headquarters: Kolkata, India
+  - Headquarters: Kolkata, India (Sector 5 & Newtown)
 
 # ===================================================================
 # 7. Core Constraints
