@@ -22,6 +22,7 @@ TOPIC_CONTACT_FORM = "ui.contact_form"
 TOPIC_USER_LOCATION = "user.location"  # frontend → backend: GPS result
 TOPIC_UI_LOCATION_REQUEST = "ui.location_request"  # backend → frontend: request GPS
 TOPIC_GLOBAL_PRESENCE = "ui.global_presense"
+TOPIC_NEARBY_OFFICES = "ui.nearby_offices"
 SKIPPED_METADATA_KEYS = ["source_content_focus"]
 
 
@@ -94,8 +95,8 @@ class IndusNetAgent(BaseAgent):
                     "Singapore": "Indus Net Technologies PTE Ltd., 60 Paya Lebar Road, #09-43 Paya Lebar Square – 409051",
                 },
                 "headquarters": {
-                    "India": "4th Floor, SDF Building Saltlake Electronic Complex, Kolkata, West Bengal 700091",
-                    "India": "4th Floor, Block-2b, ECOSPACE BUSINESS PARK, AA II, Newtown, Chakpachuria, West Bengal 700160",
+                    "Kolkata Sector 5": "4th Floor, SDF Building Saltlake Electronic Complex, Kolkata, West Bengal 700091",
+                    "Kolkata Newtown": "4th Floor, Block-2b, ECOSPACE BUSINESS PARK, AA II, Newtown, Chakpachuria, West Bengal 700160",
                 },
             },
         }
@@ -308,6 +309,28 @@ class IndusNetAgent(BaseAgent):
             return "The user's browser does not support Geolocation. Cannot calculate distance."
         else:
             return "Unknown location status received from the frontend."
+
+    @function_tool
+    async def publish_nearby_offices(self, context: RunContext, offices: list[dict]):
+        """
+        Publish a list of nearby office objects to the frontend via a data packet.
+        Call this tool when the user asks for directions or nearby offices,
+        after obtaining their location.
+
+        Args:
+            offices: A list of nearby office objects (each with 'id', 'name', 'address', and 'image_url').
+        """
+        self.logger.info(f"Publishing nearby offices to UI: {offices}")
+
+        payload = {
+            "type": "nearby_offices",
+            "data": {
+                "offices": offices,
+            },
+        }
+
+        await self._publish_data_packet(payload, TOPIC_NEARBY_OFFICES)
+        return "Nearby offices published to UI."
 
     @function_tool
     async def calculate_distance_to_destination(
