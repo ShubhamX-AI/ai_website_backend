@@ -23,6 +23,7 @@ TOPIC_USER_LOCATION = "user.location"  # frontend → backend: GPS result
 TOPIC_UI_LOCATION_REQUEST = "ui.location_request"  # backend → frontend: request GPS
 TOPIC_GLOBAL_PRESENCE = "ui.global_presense"
 TOPIC_NEARBY_OFFICES = "ui.nearby_offices"
+TOPIC_JOB_APPLICATION = "ui.job_application"
 SKIPPED_METADATA_KEYS = ["source_content_focus"]
 
 
@@ -236,6 +237,83 @@ class IndusNetAgent(BaseAgent):
         await self._publish_data_packet(payload, TOPIC_CONTACT_FORM)
 
         return "Contact form submitted successfully. A consultant will reach out soon."
+
+    @function_tool
+    async def preview_job_application(
+        self,
+        context: RunContext,
+        user_name: str,
+        user_email: str,
+        user_phone: str,
+        job_details: str,
+    ):
+        """
+        Send the job application data to the frontend for user review.
+
+        Args:
+            user_name: The name of the user.
+            user_email: The email of the user.
+            user_phone: The phone number of the user.
+            job_details: The job or career opening the user is applying for.
+        """
+        self.logger.info(
+            f"Sending job application to the UI: {user_name} | {user_email} | {user_phone} | Job: {job_details}"
+        )
+
+        payload = {
+            "type": "job_application_preview",
+            "data": {
+                "user_name": user_name,
+                "user_email": user_email,
+                "user_phone": user_phone,
+                "job_details": job_details,
+            },
+        }
+
+        # Mock sending process
+        await asyncio.sleep(2.0)
+        await self._publish_data_packet(payload, TOPIC_JOB_APPLICATION)
+
+        return "Job application form displayed on UI. Please ask the user to review the details and confirm before submission."
+
+    @function_tool
+    async def submit_job_application(
+        self,
+        context: RunContext,
+        user_name: str,
+        user_email: str,
+        user_phone: str,
+        job_details: str,
+    ):
+        """
+        Submit the job application data after user confirmation.
+
+        Args:
+            user_name: The name of the user.
+            user_email: The email of the user.
+            user_phone: The phone number of the user.
+            job_details: The job or career opening the user is applying for.
+        """
+        self.logger.info(
+            f"Submitting job application: {user_name} | {user_email} | {user_phone} | Job: {job_details}"
+        )
+
+        # Mock sending process
+        await asyncio.sleep(0.5)
+
+        payload = {
+            "type": "job_application_submit",
+            "data": {
+                "user_name": user_name,
+                "user_email": user_email,
+                "user_phone": user_phone,
+                "job_details": job_details,
+            },
+        }
+
+        await self._publish_data_packet(payload, TOPIC_JOB_APPLICATION)
+
+        return "Job application submitted successfully. Our recruitment team will review it and get back to you."
 
     @function_tool
     async def schedule_meeting(

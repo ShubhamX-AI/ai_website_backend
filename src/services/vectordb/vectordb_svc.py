@@ -15,7 +15,7 @@ class VectorStoreService:
         self.vectorstore = Chroma(
             persist_directory=f"{settings.BASE_DIR}/src/services/vectordb/chroma_db",
             embedding_function=self.embeddings,
-            collection_name="indus_net_knowledge"
+            collection_name="company_knowledge"
         )
 
     async def search(self, query: str, k: int = 5):

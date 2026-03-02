@@ -39,7 +39,7 @@ class UIAgentFunctions:
                 "provider": "chroma",
                 "config": {
                     "collection_name": "ui_flashcard_memory",
-                    "path": f"{settings.BASE_DIR}/src/services/vectordb/chroma_db/mem0",
+                    "path": f"{settings.BASE_DIR}/src/services/vectordb/chroma_db_mem0",
                 },
             },
         }
