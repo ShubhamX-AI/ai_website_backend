@@ -1,11 +1,13 @@
 from openai import AsyncOpenAI
 from src.services.openai.indusnet.ui_system_prompt import UI_SYSTEM_INSTRUCTION
+from src.services.openai.indusnet.media_assets import MEDIA_ASSETS
 from typing import Any, AsyncGenerator, Optional
 from mem0 import Memory
 import json
 import re
 import os
 import logging
+import asyncio
 from dotenv import load_dotenv
 from src.core.config import settings
 
@@ -150,12 +152,12 @@ class UIAgentFunctions:
                                 else:
                                     break
 
-            # ── Save batch to Mem0 after full stream ─────────────────────
-            await self._save_to_memory(
+            # ── Save batch to Mem0 after full stream in background ──────
+            asyncio.create_task(self._save_to_memory(
                 user_query=user_input,
                 cards=generated_cards,
                 user_id=user_id,
-            )
+            ))
 
         except Exception as e:
             yield {"type": "error", "content": str(e)}
@@ -180,7 +182,9 @@ class UIAgentFunctions:
         )
 
         try:
-            results = self.memory.search(query=agent_response, user_id=user_id, limit=1)
+            results = await asyncio.to_thread(
+                self.memory.search, query=agent_response, user_id=user_id, limit=1
+            )
 
             if not results or not results.get("results"):
                 self.logger.info("🔍 No Mem0 results found for: %s", agent_response)
@@ -247,7 +251,8 @@ class UIAgentFunctions:
             # We store the actual payloads in metadata for reliability.
             memory_content = f"The user viewed flashcards for the query: '{user_query}'."
 
-            self.memory.add(
+            await asyncio.to_thread(
+                self.memory.add,
                 messages=[{"role": "user", "content": memory_content}],
                 user_id=user_id,
                 metadata={
@@ -278,41 +283,34 @@ class UIAgentFunctions:
             "title",
             "value",
             "visual_intent",
-            "animation_style",
             "icon",
-            "media",
-            "accentColor",
-            "theme",
-            "size",
-            "layout",
-            "image",
         ):
             if key in card_obj and card_obj[key] is not None:
                 payload[key] = card_obj[key]
 
+        # Handle media block: map asset_key → urls, or pass through stock query/source
+        if "media" in card_obj and isinstance(card_obj["media"], dict):
+            media_data = card_obj["media"]
+            resolved_media = {}
+
+            asset_key = media_data.get("asset_key")
+            if asset_key and asset_key in MEDIA_ASSETS:
+                # Known semantic asset — resolve to URLs only
+                asset_info = MEDIA_ASSETS[asset_key]
+                resolved_media["urls"] = asset_info.get("urls", [])
+            else:
+                # Stock fallback — forward query + source only
+                if "query" in media_data:
+                    resolved_media["query"] = media_data["query"]
+                if "source" in media_data:
+                    resolved_media["source"] = media_data["source"]
+
+            # asset_key is never forwarded to the frontend
+            payload["media"] = resolved_media
+
+        # Alias compatibility: accept "intent" as fallback for "visual_intent"
         if "visual_intent" not in payload and "intent" in card_obj:
             payload["visual_intent"] = card_obj["intent"]
-
-        if "animation_style" not in payload and "animation" in card_obj:
-            payload["animation_style"] = card_obj["animation"]
-
-        if "accent_color" in card_obj and "accentColor" not in payload:
-            payload["accentColor"] = card_obj["accent_color"]
-
-        if (
-            "image_url" in card_obj
-            or "image_alt" in card_obj
-            or "image_aspect_ratio" in card_obj
-        ):
-            payload.setdefault("image", {})
-            image = payload["image"] if isinstance(payload["image"], dict) else {}
-            if "image_url" in card_obj:
-                image["url"] = card_obj["image_url"]
-            if "image_alt" in card_obj:
-                image["alt"] = card_obj["image_alt"]
-            if "image_aspect_ratio" in card_obj:
-                image["aspectRatio"] = card_obj["image_aspect_ratio"]
-            payload["image"] = image
 
         if "title" not in payload or "value" not in payload:
             return None
