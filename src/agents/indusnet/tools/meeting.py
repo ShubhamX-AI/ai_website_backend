@@ -67,6 +67,13 @@ class MeetingToolsMixin:
                 },
             }
             await self._publish_data_packet(payload, TOPIC_MEETING_FORM)
+            self._set_last_ui_snapshot(
+                snapshot_type="meeting_invite_sent",
+                title="Meeting invite sent",
+                summary=f"Meeting invite '{subject}' was sent to {recipient_email}.",
+                details=payload.get("data", {}),
+                source_tool="schedule_meeting",
+            )
 
             return (
                 f"Meeting '{subject}' scheduled and invite sent to {recipient_email}."
@@ -115,5 +122,12 @@ class MeetingToolsMixin:
         # Small delay for visual effect
         await asyncio.sleep(1.5)
         await self._publish_data_packet(payload, TOPIC_MEETING_FORM)
+        self._set_last_ui_snapshot(
+            snapshot_type="meeting_preview",
+            title="Meeting invitation preview",
+            summary="Displayed meeting invitation details for review.",
+            details=payload.get("data", {}),
+            source_tool="preview_meeting_invite",
+        )
 
         return "Meeting preview displayed on UI. Please ask the user to review the details and confirm before sending the invite."

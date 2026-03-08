@@ -20,6 +20,14 @@ class UIPublisherToolsMixin:
         """Tool used to publish the UI stream to the frontend."""
         self.logger.info(f"Publishing UI stream for: {user_input}")
 
+        self._set_last_ui_snapshot(
+            snapshot_type="flashcard_stream",
+            title="Knowledge summary",
+            summary=agent_response,
+            details={"user_input": user_input},
+            source_tool="publish_ui_stream",
+        )
+
         # This runs in the background to ensure the voice response isn't delayed
         asyncio.create_task(
             self._publish_ui_stream(user_input, self.db_results, agent_response, self.user_id)
@@ -80,6 +88,13 @@ class UIPublisherToolsMixin:
             len(cards),
             self.user_id,
         )
+        self._set_last_ui_snapshot(
+            snapshot_type="flashcard_recall",
+            title="Recalled content",
+            summary=f"Re-displayed {len(cards)} flashcard(s) from previous session content.",
+            details={"query": agent_response, "card_count": len(cards)},
+            source_tool="recall_and_republish_ui_content",
+        )
         return f"Re-displayed {len(cards)} flashcard(s) from your previous session."
 
     @function_tool
@@ -107,6 +122,13 @@ class UIPublisherToolsMixin:
         }
 
         await self._publish_data_packet(payload, TOPIC_GLOBAL_PRESENCE)
+        self._set_last_ui_snapshot(
+            snapshot_type="global_presence",
+            title="Global presence",
+            summary="Displayed Indus Net global and headquarters locations.",
+            details=payload.get("data", {}),
+            source_tool="publisg_gloabl_pesense",
+        )
         return "Global presence data published."
 
     @function_tool
@@ -129,7 +151,27 @@ class UIPublisherToolsMixin:
         }
 
         await self._publish_data_packet(payload, TOPIC_NEARBY_OFFICES)
+        self._set_last_ui_snapshot(
+            snapshot_type="nearby_offices",
+            title="Nearby offices",
+            summary=f"Displayed {len(offices)} nearby office option(s).",
+            details=payload.get("data", {}),
+            source_tool="publish_nearby_offices",
+            links=[office.get("image_url") for office in offices if office.get("image_url")],
+        )
         return "Nearby offices published to UI."
+
+    @function_tool
+    async def get_ui_history(self, context: RunContext) -> str:
+        """
+        Return the list of screens shown this session in order (oldest → newest).
+        The current screen is marked with *.
+        Call this BEFORE any back-navigation action to get the real server-tracked history.
+        """
+        titles = self._get_snapshot_history_titles()
+        if not titles:
+            return "No screen history yet this session."
+        return "\n".join(titles)
 
     async def _publish_ui_stream(
         self, user_input: str, db_results: str, agent_response: str, user_id: str

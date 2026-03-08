@@ -18,6 +18,7 @@ from src.agents.indusnet.tools.ui_publisher import UIPublisherToolsMixin
 from src.agents.indusnet.tools.forms import FormToolsMixin
 from src.agents.indusnet.tools.location import LocationToolsMixin
 from src.agents.indusnet.tools.meeting import MeetingToolsMixin
+from src.agents.indusnet.tools.email import EmailToolsMixin
 from src.agents.indusnet.tools.user import UserToolsMixin
 from src.agents.indusnet.tools.endcall import EndCallToolsMixin
 
@@ -40,6 +41,7 @@ class IndusNetAgent(
     FormToolsMixin,
     LocationToolsMixin,
     MeetingToolsMixin,
+    EmailToolsMixin,
     UserToolsMixin,
     EndCallToolsMixin,
     # ── Base ───────────────────────────────────────────────────────

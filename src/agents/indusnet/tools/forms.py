@@ -46,6 +46,13 @@ class FormToolsMixin:
         # Mock sending process
         await asyncio.sleep(2.0)
         await self._publish_data_packet(payload, TOPIC_CONTACT_FORM)
+        self._set_last_ui_snapshot(
+            snapshot_type="contact_form_preview",
+            title="Contact form preview",
+            summary="Displayed contact form details for user review.",
+            details=payload.get("data", {}),
+            source_tool="preview_contact_form",
+        )
 
         return "Contact form displayed on UI. Please ask the user to review the details and confirm before submission."
 
@@ -85,6 +92,13 @@ class FormToolsMixin:
         }
 
         await self._publish_data_packet(payload, TOPIC_CONTACT_FORM)
+        self._set_last_ui_snapshot(
+            snapshot_type="contact_form_submitted",
+            title="Contact form submitted",
+            summary="Submitted contact form details to the company.",
+            details=payload.get("data", {}),
+            source_tool="submit_contact_form",
+        )
 
         return "Contact form submitted successfully. A consultant will reach out soon."
 
@@ -123,6 +137,13 @@ class FormToolsMixin:
         # Mock sending process
         await asyncio.sleep(2.0)
         await self._publish_data_packet(payload, TOPIC_JOB_APPLICATION)
+        self._set_last_ui_snapshot(
+            snapshot_type="job_application_preview",
+            title="Job application preview",
+            summary="Displayed job application details for user review.",
+            details=payload.get("data", {}),
+            source_tool="preview_job_application",
+        )
 
         return "Job application form displayed on UI. Please ask the user to review the details and confirm before submission."
 
@@ -162,5 +183,12 @@ class FormToolsMixin:
         }
 
         await self._publish_data_packet(payload, TOPIC_JOB_APPLICATION)
+        self._set_last_ui_snapshot(
+            snapshot_type="job_application_submitted",
+            title="Job application submitted",
+            summary="Submitted job application details to recruitment.",
+            details=payload.get("data", {}),
+            source_tool="submit_job_application",
+        )
 
         return "Job application submitted successfully. Our recruitment team will review it and get back to you."
