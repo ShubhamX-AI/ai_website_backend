@@ -134,6 +134,20 @@ class LocationToolsMixin:
                 },
                 TOPIC_UI_LOCATION_REQUEST,
             )
+            self._set_last_ui_snapshot(
+                snapshot_type="distance_map",
+                title="Distance and route",
+                summary=(
+                    f"Displayed route to {formatted_address}: {distance_text}, about {duration_text} by car."
+                ),
+                details={
+                    "origin": self._user_address,
+                    "destination": formatted_address,
+                    "distance": distance_text,
+                    "duration": duration_text,
+                },
+                source_tool="calculate_distance_to_destination",
+            )
 
             return (
                 f"The destination '{formatted_address}' is approximately {distance_text} away "

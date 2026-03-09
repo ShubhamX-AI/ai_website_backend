@@ -11,6 +11,8 @@ TOPIC_GLOBAL_PRESENCE = "ui.global_presense"
 TOPIC_NEARBY_OFFICES = "ui.nearby_offices"
 TOPIC_JOB_APPLICATION = "ui.job_application"
 TOPIC_MEETING_FORM = "ui.meeting_form"
+TOPIC_EMAIL_PREVIEW = "ui.email_preview"
+TOPIC_EMAIL_DELIVERY = "ui.email_delivery"
 
 
 # Metadata keys to skip when formatting vector DB results
