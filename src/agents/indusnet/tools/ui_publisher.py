@@ -1,4 +1,5 @@
 import asyncio
+import re
 import uuid
 
 from livekit.agents import function_tool, RunContext
@@ -13,6 +14,30 @@ from src.agents.indusnet.constants import (
 class UIPublisherToolsMixin:
     """Tools for publishing UI content (flashcards, global presence, nearby offices) to the frontend."""
 
+    def _build_knowledge_email_context(
+        self,
+        user_input: str,
+        agent_response: str,
+    ) -> dict:
+        topic_hint = (user_input or "").strip()
+        topic_hint = re.sub(r"^(hi|hello|hey)\s+", "", topic_hint, flags=re.IGNORECASE)
+        topic_hint = re.sub(
+            r"^(can you|could you|please|tell me about|what about|what is|who is|show me|explain)\s+",
+            "",
+            topic_hint,
+            flags=re.IGNORECASE,
+        )
+        topic_hint = topic_hint.strip(" ?!.,:")
+        if len(topic_hint) > 60:
+            topic_hint = ""
+
+        return {
+            "email_type": "knowledge_summary",
+            "topic_hint": topic_hint,
+            "raw_summary": agent_response,
+            "context_line": "Key information from Indus Net Assistant.",
+        }
+
     @function_tool
     async def publish_ui_stream(
         self, context: RunContext, user_input: str, agent_response: str
@@ -26,11 +51,16 @@ class UIPublisherToolsMixin:
             summary=agent_response,
             details={"user_input": user_input},
             source_tool="publish_ui_stream",
+            email_context=self._build_knowledge_email_context(
+                user_input, agent_response
+            ),
         )
 
         # This runs in the background to ensure the voice response isn't delayed
         asyncio.create_task(
-            self._publish_ui_stream(user_input, self.db_results, agent_response, self.user_id)
+            self._publish_ui_stream(
+                user_input, self.db_results, agent_response, self.user_id
+            )
         )
         return "UI stream published."
 
@@ -157,7 +187,9 @@ class UIPublisherToolsMixin:
             summary=f"Displayed {len(offices)} nearby office option(s).",
             details=payload.get("data", {}),
             source_tool="publish_nearby_offices",
-            links=[office.get("image_url") for office in offices if office.get("image_url")],
+            links=[
+                office.get("image_url") for office in offices if office.get("image_url")
+            ],
         )
         return "Nearby offices published to UI."
 

@@ -12,6 +12,7 @@ class Settings:
 
     # OpenAI
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+    EMAIL_SUMMARY_MODEL = os.getenv("EMAIL_SUMMARY_MODEL", "gpt-4o-mini")
 
     # Cartesia
     CARTESIA_API_KEY = os.getenv("CARTESIA_API_KEY")
@@ -31,6 +32,11 @@ class Settings:
     SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
     SENDER_EMAIL = os.getenv("SENDER_EMAIL", "your-email@gmail.com")
     SENDER_PASSWORD = os.getenv("SENDER_PASSWORD", "your-app-password")
+
+    # WhatsApp config
+    WHATSAPP_PHONE_NUMBER_ID = os.getenv("WHATSAPP_PHONE_NUMBER_ID", "110377482141989")
+    WHATSAPP_ACCESS_TOKEN = os.getenv("WHATSAPP_ACCESS_TOKEN", "")
+    WHATSAPP_TEMPLATE_NAME = os.getenv("WHATSAPP_TEMPLATE_NAME", "utility_agui_agent")
 
 
 settings = Settings()

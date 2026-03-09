@@ -19,12 +19,12 @@ from src.agents.indusnet.tools.forms import FormToolsMixin
 from src.agents.indusnet.tools.location import LocationToolsMixin
 from src.agents.indusnet.tools.meeting import MeetingToolsMixin
 from src.agents.indusnet.tools.email import EmailToolsMixin
+from src.agents.indusnet.tools.whatsapp import WhatsAppToolsMixin
 from src.agents.indusnet.tools.user import UserToolsMixin
 from src.agents.indusnet.tools.endcall import EndCallToolsMixin
 
 # ── State ──────────────────────────────────────────────────────────────────
 from src.agents.indusnet.state import AgentState
-
 
 
 class IndusNetAgent(
@@ -42,6 +42,7 @@ class IndusNetAgent(
     LocationToolsMixin,
     MeetingToolsMixin,
     EmailToolsMixin,
+    WhatsAppToolsMixin,
     UserToolsMixin,
     EndCallToolsMixin,
     # ── Base ───────────────────────────────────────────────────────
@@ -111,4 +112,3 @@ class IndusNetAgent(
 
         # Update the LLM system prompt
         await self.update_instructions(new_instructions)
-

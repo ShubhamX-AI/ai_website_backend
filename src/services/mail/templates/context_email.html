@@ -3,63 +3,41 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Session Summary</title>
+    <title>$escaped_subject</title>
   </head>
-  <body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #334155; -webkit-font-smoothing: antialiased;">
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f8fafc; padding: 40px 20px;">
+  <body style="margin: 0; padding: 0; background-color: #edf2f7; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; color: #1e293b;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background: linear-gradient(180deg, #e2e8f0 0%, #f8fafc 100%); padding: 32px 16px;">
       <tr>
         <td align="center">
-          <!-- Main Container -->
-          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
-            
-            <!-- Header -->
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 640px; background-color: #ffffff; border: 1px solid #dbe4ee; border-radius: 18px; overflow: hidden; box-shadow: 0 18px 42px rgba(15, 23, 42, 0.08);">
             <tr>
-              <td style="padding: 40px 32px; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); text-align: center;">
-                <h1 style="margin: 0; font-size: 24px; font-weight: 700; color: #ffffff; letter-spacing: -0.025em;">Session Summary</h1>
-                <p style="margin: 8px 0 0; font-size: 15px; color: #94a3b8;">Prepared by Indus Net Assistant</p>
+              <td style="padding: 28px 32px; background: linear-gradient(135deg, #0f172a 0%, #1d4ed8 100%);">
+                <p style="margin: 0 0 10px; font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #bfdbfe;">Indus Net Assistant</p>
+                <h1 style="margin: 0; font-size: 28px; line-height: 1.2; font-weight: 700; color: #ffffff;">$escaped_heading</h1>
               </td>
             </tr>
-
-            <!-- Body Content -->
             <tr>
-              <td style="padding: 40px 32px;">
-                <p style="margin: 0 0 16px; font-size: 18px; font-weight: 600; color: #0f172a;">Hi $greeting_name,</p>
-                <p style="margin: 0 0 32px; font-size: 15px; line-height: 1.6; color: #475569;">Here is the detailed summary you requested from your latest session context. We've compiled the key takeaways below.</p>
-                
-                <!-- Summary Box -->
-                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f0f9ff; border: 1px solid #bae6fd; border-radius: 12px; margin-bottom: 32px;">
+              <td style="padding: 32px;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 24px; background-color: #eff6ff; border: 1px solid #bfdbfe; border-radius: 14px;">
                   <tr>
-                    <td style="padding: 24px;">
-                      <h2 style="margin: 0 0 12px; font-size: 18px; font-weight: 700; color: #0369a1;">$escaped_title</h2>
-                      <p style="margin: 0; font-size: 15px; line-height: 1.6; color: #0f172a;">$escaped_summary</p>
+                    <td style="padding: 18px 20px; font-size: 15px; line-height: 1.6; color: #1e3a8a;">
+                      <p style="margin: 0 0 12px; font-weight: 600;">$escaped_greeting</p>
+                      $escaped_context_line
                     </td>
                   </tr>
                 </table>
 
-                <!-- Details Section -->
-                <h3 style="margin: 0 0 16px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">Additional Details</h3>
-                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 8px;">
-                  <tr>
-                    <td style="padding: 16px 0;">
-                      <ul style="margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.6; color: #334155;">
-                        $details_html
-                      </ul>
-                    </td>
-                  </tr>
-                </table>
-
+                <h2 style="margin: 0 0 14px; font-size: 14px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #475569;">Key Points</h2>
+                <ul style="margin: 0; padding-left: 22px; font-size: 15px; line-height: 1.7; color: #0f172a;">
+                  $bullet_points_html
+                </ul>
               </td>
             </tr>
-
-            <!-- Footer -->
             <tr>
-              <td style="padding: 24px 32px; background-color: #f1f5f9; border-top: 1px solid #e2e8f0; text-align: center;">
-                <!-- <p style="margin: 0 0 8px; font-size: 13px; color: #64748b;"><strong>Source Tool:</strong> <span style="display: inline-block; padding: 2px 8px; background-color: #e2e8f0; color: #475569; border-radius: 12px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">$escaped_source</span></p> -->
-                <p style="margin: 0 0 16px; font-size: 12px; color: #94a3b8;">Generated at $escaped_time</p>
-                <p style="margin: 0; font-size: 12px; color: #cbd5e1;">&copy; Indus Net Assistant. All rights reserved.</p>
+              <td style="padding: 18px 32px 24px; border-top: 1px solid #e2e8f0; font-size: 12px; color: #64748b;">
+                Shared by Indus Net Assistant.
               </td>
             </tr>
-
           </table>
         </td>
       </tr>

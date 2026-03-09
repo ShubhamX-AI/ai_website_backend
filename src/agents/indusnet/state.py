@@ -61,6 +61,7 @@ class AgentState:
         details: Optional[dict] = None,
         source_tool: str = "",
         links: Optional[list[str]] = None,
+        email_context: Optional[dict] = None,
     ) -> None:
         """
         Push a canonical snapshot of what is now visible on the user's screen.
@@ -75,6 +76,7 @@ class AgentState:
             "details": details or {},
             "source_tool": source_tool,
             "links": links or [],
+            "email_context": email_context or {},
             "timestamp": dt.datetime.now(dt.timezone.utc).isoformat(),
         }
         self._ui_snapshot_history.append(snapshot)

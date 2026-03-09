@@ -49,6 +49,7 @@ async def entrypoint(ctx: JobContext):
             model="sonic-3",
             voice="faf0731e-dfb9-4cfc-8119-259a79b27e12",
             api_key=settings.CARTESIA_API_KEY,
+            speed=1.1
         ),
         preemptive_generation=True,
         use_tts_aligned_transcript=True,
