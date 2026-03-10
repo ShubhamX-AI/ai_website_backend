@@ -9,6 +9,11 @@ from src.agents.indusnet.constants import (
 from src.services.mail.submission_receipt import send_submission_receipt
 
 
+def _spoken_reference(reference_id: str) -> str:
+    suffix = reference_id[-6:] if len(reference_id) > 6 else reference_id
+    return f"reference ending in {suffix}"
+
+
 class FormToolsMixin:
     """Tools for the contact form and job application workflows."""
 
@@ -116,8 +121,7 @@ class FormToolsMixin:
         if receipt_result.sent:
             return (
                 "Contact form submitted successfully. "
-                f"I emailed a receipt to {user_email}. "
-                f"Reference ID: {receipt_result.reference_id}."
+                f"I emailed a receipt to {user_email} with the full tracking details, including the {_spoken_reference(receipt_result.reference_id)}."
             )
 
         self.logger.warning(
@@ -127,7 +131,7 @@ class FormToolsMixin:
         )
         return (
             "Contact form submitted successfully, but I could not email the receipt right now. "
-            f"Reference ID: {receipt_result.reference_id}."
+            f"I still saved it under the {_spoken_reference(receipt_result.reference_id)}."
         )
 
     @function_tool
@@ -235,8 +239,7 @@ class FormToolsMixin:
         if receipt_result.sent:
             return (
                 "Job application submitted successfully. "
-                f"I emailed a receipt to {user_email}. "
-                f"Reference ID: {receipt_result.reference_id}."
+                f"I emailed a receipt to {user_email} with the full tracking details, including the {_spoken_reference(receipt_result.reference_id)}."
             )
 
         self.logger.warning(
@@ -246,5 +249,5 @@ class FormToolsMixin:
         )
         return (
             "Job application submitted successfully, but I could not email the receipt right now. "
-            f"Reference ID: {receipt_result.reference_id}."
+            f"I still saved it under the {_spoken_reference(receipt_result.reference_id)}."
         )

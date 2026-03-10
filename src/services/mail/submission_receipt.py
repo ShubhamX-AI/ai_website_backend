@@ -2,6 +2,8 @@ import datetime as dt
 import html
 import uuid
 from dataclasses import dataclass
+from pathlib import Path
+from string import Template
 
 from src.services.mail.context_email import send_email_message
 
@@ -39,6 +41,9 @@ _RECEIPT_CONFIG = {
     },
 }
 
+_TEMPLATE_PATH = Path(__file__).parent / "templates" / "submission_receipt.html"
+_RECEIPT_TEMPLATE: Template | None = None
+
 
 def _build_reference_id(prefix: str, submitted_at: dt.datetime) -> str:
     timestamp = submitted_at.strftime("%Y%m%d%H%M%S")
@@ -50,14 +55,22 @@ def _format_submitted_at(submitted_at: dt.datetime) -> str:
     return submitted_at.strftime("%Y-%m-%d %H:%M:%S UTC")
 
 
+def _load_receipt_template() -> Template:
+    global _RECEIPT_TEMPLATE
+    if _RECEIPT_TEMPLATE is None:
+        with _TEMPLATE_PATH.open("r", encoding="utf-8") as template_file:
+            _RECEIPT_TEMPLATE = Template(template_file.read())
+    return _RECEIPT_TEMPLATE
+
+
 def _build_details_rows(details: list[tuple[str, str]]) -> str:
     rows = []
     for label, value in details:
         rows.append(
             "<tr>"
-            f'<td style="padding: 12px 14px; border: 1px solid #dbe4ee; width: 180px; '
-            f'font-weight: 700; color: #334155; background-color: #f8fafc;">{html.escape(label)}</td>'
-            f'<td style="padding: 12px 14px; border: 1px solid #dbe4ee; color: #0f172a;">{html.escape(value)}</td>'
+            f'<td style="padding: 13px 14px; border-top: 1px solid #e2e8f0; width: 180px; '
+            f'font-weight: 700; vertical-align: top; color: #52637c;">{html.escape(label)}</td>'
+            f'<td style="padding: 13px 14px; border-top: 1px solid #e2e8f0; vertical-align: top; color: #0f172a;">{html.escape(value)}</td>'
             "</tr>"
         )
     return "".join(rows)
@@ -113,41 +126,16 @@ def _compose_submission_receipt(
     plain_lines.extend(["", "Indus Net Assistant"])
     plain_text = "\n".join(plain_lines)
 
-    html_body = (
-        "<!doctype html>"
-        '<html lang="en">'
-        "<head>"
-        '<meta charset="utf-8">'
-        '<meta name="viewport" content="width=device-width, initial-scale=1.0">'
-        f"<title>{html.escape(config['subject'])}</title>"
-        "</head>"
-        "<body style=\"margin: 0; padding: 0; background-color: #edf2f7; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; color: #1e293b;\">"
-        '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background: linear-gradient(180deg, #e2e8f0 0%, #f8fafc 100%); padding: 32px 16px;">'
-        '<tr><td align="center">'
-        '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 680px; background-color: #ffffff; border: 1px solid #dbe4ee; border-radius: 18px; overflow: hidden; box-shadow: 0 18px 42px rgba(15, 23, 42, 0.08);">'
-        '<tr><td style="padding: 28px 32px; background: linear-gradient(135deg, #0f172a 0%, #1d4ed8 100%);">'
-        '<p style="margin: 0 0 10px; font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #bfdbfe;">Indus Net Assistant</p>'
-        f'<h1 style="margin: 0; font-size: 28px; line-height: 1.2; font-weight: 700; color: #ffffff;">{html.escape(config["heading"])}</h1>'
-        "</td></tr>"
-        '<tr><td style="padding: 32px;">'
-        '<p style="margin: 0 0 12px; font-size: 16px; line-height: 1.6; color: #0f172a;">'
-        f"Hi {html.escape(greeting_name)},"
-        "</p>"
-        f'<p style="margin: 0 0 24px; font-size: 15px; line-height: 1.7; color: #334155;">{html.escape(config["intro"])}</p>'
-        '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse: collapse; margin-bottom: 24px;">'
-        f"{_build_details_rows(details)}"
-        "</table>"
-        '<h2 style="margin: 0 0 14px; font-size: 14px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #475569;">Next Steps</h2>'
-        '<ul style="margin: 0; padding-left: 22px; font-size: 15px; line-height: 1.7; color: #0f172a;">'
-        f"{_build_next_steps_html(config['next_steps'])}"
-        "</ul>"
-        "</td></tr>"
-        '<tr><td style="padding: 18px 32px 24px; border-top: 1px solid #e2e8f0; font-size: 12px; color: #64748b;">Shared by Indus Net Assistant.</td></tr>'
-        "</table>"
-        "</td></tr>"
-        "</table>"
-        "</body>"
-        "</html>"
+    html_body = _load_receipt_template().safe_substitute(
+        escaped_subject=html.escape(config["subject"]),
+        escaped_status=html.escape("Received"),
+        escaped_heading=html.escape(config["heading"]),
+        escaped_intro=html.escape(config["intro"]),
+        escaped_reference_id=html.escape(reference_id),
+        escaped_submitted_at=html.escape(submitted_at_text),
+        escaped_greeting=html.escape(f"Hi {greeting_name},"),
+        details_rows_html=_build_details_rows(details),
+        next_steps_html=_build_next_steps_html(config["next_steps"]),
     )
 
     return (

@@ -44,6 +44,8 @@ src/
     │   ├── context_email.py      # Context summary email composition and delivery
     │   ├── submission_receipt.py # Contact/job submission receipt emails
     │   └── templates/            # Shared HTML email templates
+    │       ├── context_email.html
+    │       └── submission_receipt.html
     ├── map/            # Google Maps integration
     ├── vectordb/       # ChromaDB vector knowledge base
     └── whatsapp/       # WhatsApp message service
