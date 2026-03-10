@@ -1,3 +1,4 @@
+import asyncio
 import html
 import logging
 import re
@@ -8,15 +9,23 @@ from pathlib import Path
 from string import Template
 
 from pydantic import BaseModel
-from openai import OpenAI
 
 from src.core.config import settings
+from src.services._ai_formatter import llm_parse
 
 logger = logging.getLogger(__name__)
 
 _EMAIL_RE = re.compile(r"^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$", re.IGNORECASE)
 _TEMPLATE_PATH = Path(__file__).parent / "templates" / "context_email.html"
 _EMAIL_TEMPLATE: Template | None = None
+
+_SYSTEM_PROMPT = (
+    "You format concise business emails from UI snapshot data. "
+    "Rules: factual, no filler phrases, no greetings, no questions, "
+    "no markdown, 3–5 bullet points each under 140 characters, "
+    "subject prefixed with 'Indus Net | ', heading must be specific "
+    "and descriptive (never generic like 'Summary' or 'Details')."
+)
 
 
 class EmailSchema(BaseModel):
@@ -38,14 +47,14 @@ def _load_email_template() -> Template:
     return _EMAIL_TEMPLATE
 
 
-def compose_context_email(
+async def compose_context_email(
     snapshot: dict, user_name: str | None = None
 ) -> tuple[str, str, str]:
     """Compose subject, plain text, and HTML from a UI snapshot using LLM."""
 
     greeting = f"Hi {user_name.strip()}," if user_name and user_name.strip() else "Hi there,"
 
-    pres = _llm_format(snapshot) or _fallback_format(snapshot)
+    pres = await llm_parse(snapshot, _SYSTEM_PROMPT, EmailSchema) or _fallback_format(snapshot)
 
     # Plain text
     plain_bullets = "\n".join(f"- {p}" for p in pres.bullet_points)
@@ -70,35 +79,6 @@ def compose_context_email(
     return pres.subject, plain_body, html_body
 
 
-def _llm_format(snapshot: dict) -> EmailSchema | None:
-    if not settings.OPENAI_API_KEY:
-        return None
-    try:
-        client = OpenAI(api_key=settings.OPENAI_API_KEY, timeout=8.0)
-        response = client.beta.chat.completions.parse(
-            model=settings.EMAIL_SUMMARY_MODEL,
-            temperature=0.2,
-            response_format=EmailSchema,
-            messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "You format concise business emails from UI snapshot data. "
-                        "Rules: factual, no filler phrases, no greetings, no questions, "
-                        "no markdown, 3–5 bullet points each under 140 characters, "
-                        "subject prefixed with 'Indus Net | ', heading must be specific "
-                        "and descriptive (never generic like 'Summary' or 'Details')."
-                    ),
-                },
-                {"role": "user", "content": str(snapshot)},
-            ],
-        )
-        return response.choices[0].message.parsed
-    except Exception as exc:
-        logger.error("Email LLM formatting failed: %s", exc)
-        return None
-
-
 def _fallback_format(snapshot: dict) -> EmailSchema:
     """Minimal fallback when LLM is unavailable."""
     title = str(snapshot.get("title") or snapshot.get("type") or "Requested Information")
@@ -111,7 +91,16 @@ def _fallback_format(snapshot: dict) -> EmailSchema:
     )
 
 
-def send_context_email(
+def _smtp_send(msg: MIMEMultipart, sender_email: str, sender_password: str, recipient_email: str) -> None:
+    """Blocking SMTP call — always run via asyncio.to_thread."""
+    server = smtplib.SMTP(settings.SMTP_SERVER, settings.SMTP_PORT)
+    server.starttls()
+    server.login(sender_email, sender_password)
+    server.sendmail(sender_email, [recipient_email], msg.as_string())
+    server.quit()
+
+
+async def send_context_email(
     recipient_email: str,
     snapshot: dict,
     user_name: str | None = None,
@@ -127,7 +116,7 @@ def send_context_email(
         return False, "Recipient email address is invalid."
 
     try:
-        subject, plain_text, html_body = compose_context_email(snapshot, user_name)
+        subject, plain_text, html_body = await compose_context_email(snapshot, user_name)
     except Exception as exc:
         logger.error("Failed to compose email: %s", exc)
         return False, f"Failed to compose email: {exc}"
@@ -140,11 +129,7 @@ def send_context_email(
     msg.attach(MIMEText(html_body, "html", "utf-8"))
 
     try:
-        server = smtplib.SMTP(settings.SMTP_SERVER, settings.SMTP_PORT)
-        server.starttls()
-        server.login(sender_email, sender_password)
-        server.sendmail(sender_email, [recipient_email], msg.as_string())
-        server.quit()
+        await asyncio.to_thread(_smtp_send, msg, sender_email, sender_password, recipient_email)
         logger.info("Context email sent to %s", recipient_email)
         return True, "Context email sent successfully."
     except Exception as exc:

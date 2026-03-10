@@ -100,10 +100,7 @@ class EmailToolsMixin:
 
         snapshot_type = snapshot.get("type", "unknown")
 
-        loop = asyncio.get_event_loop()
-        success, message = await loop.run_in_executor(
-            None,
-            send_context_email,
+        success, message = await send_context_email(
             to_email,
             snapshot,
             self.user_name,
