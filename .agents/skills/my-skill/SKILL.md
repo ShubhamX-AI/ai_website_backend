@@ -1,5 +1,5 @@
 ---
-name: senior-software-engineer
+name: my-skill
 description: Activates a senior software engineer mindset for ALL coding tasks. Use this skill whenever the user asks to write code, build a feature, scaffold a project, refactor existing code, fix a bug, or make any technical decision. Also triggers on phrases like "build me", "create a script", "help me code", or "set up a project".
 ---
 

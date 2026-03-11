@@ -1,12 +1,12 @@
+from collections import deque
 import logging
-import json
 import asyncio
 import os
+import random
 from typing import cast
 from livekit import rtc
 from livekit.agents import (
     WorkerOptions,
-    AgentServer,
     AgentSession,
     JobContext,
     cli,
@@ -22,10 +22,14 @@ from openai.types.beta.realtime.session import TurnDetection
 from src.core.config import settings
 from src.core.logger import setup_logging
 from src.agents.indusnet.agent import IndusNetAgent
+from src.agents.indusnet.helpers.filler import generate_filler
+from src.agents.indusnet.helpers.silence import (
+    AgentIdleShutdownController,
+    SilenceWatchdogController,
+)
 
 setup_logging()
 logger = logging.getLogger(__name__)
-
 
 async def entrypoint(ctx: JobContext):
     session = AgentSession(
@@ -38,7 +42,7 @@ async def entrypoint(ctx: JobContext):
             input_audio_noise_reduction="near_field",
             turn_detection=TurnDetection(
                 type="semantic_vad",
-                eagerness="low",
+                eagerness="high",
                 create_response=True,
                 interrupt_response=True,
             ),
@@ -49,7 +53,7 @@ async def entrypoint(ctx: JobContext):
             model="sonic-3",
             voice="faf0731e-dfb9-4cfc-8119-259a79b27e12",
             api_key=settings.CARTESIA_API_KEY,
-            speed=1.1
+            speed=1.1,
         ),
         preemptive_generation=True,
         use_tts_aligned_transcript=True,
@@ -66,6 +70,9 @@ async def entrypoint(ctx: JobContext):
 
     agent_instance = IndusNetAgent(room=ctx.room)
 
+    # Recent completed turns — passed to filler LLM for emotional context
+    _context_turns: deque = deque(maxlen=4)
+
     # Configure room options
     room_options = room_io.RoomOptions(
         text_input=True,
@@ -76,6 +83,67 @@ async def entrypoint(ctx: JobContext):
     )
 
     await session.start(agent=agent_instance, room=ctx.room, room_options=room_options)
+
+    silence_watchdog = SilenceWatchdogController(session=session, logger=logger)
+    agent_idle_shutdown = AgentIdleShutdownController(session=session, logger=logger)
+    user_is_speaking = False
+
+    # ── Filler pipeline ───────────────────────────────────────────────────────
+    # Uses VAD state to schedule/cancel the filler loop. Each loop fires a
+    # standalone LLM call (gpt-4o-mini) with the last 4 conversation turns so
+    # the phrase matches the emotional tone of the conversation.
+
+    @session.on("agent_state_changed")
+    def on_agent_state_changed(ev):
+        """Forward agent runtime state to idle timeout controller."""
+        agent_idle_shutdown.on_agent_state_changed(ev.new_state)
+
+    @session.on("conversation_item_added")
+    def on_conversation_item_added(ev):
+        """Store turn context and update silence tracking."""
+        msg = ev.item
+        if hasattr(msg, "role") and hasattr(msg, "text_content") and msg.text_content:
+            if msg.role in ("user", "assistant"):
+                _context_turns.append({"role": msg.role, "text": msg.text_content})
+
+            if msg.role == "user":
+                silence_watchdog.on_user_message()
+                return
+
+            if msg.role == "assistant":
+                if user_is_speaking:
+                    return
+                silence_watchdog.on_assistant_message(msg.text_content)
+
+    async def _filler_loop():
+        """Fire fillers while the user speaks: first at 2-3s, then every 5-8s."""
+        await asyncio.sleep(random.uniform(2.0, 3.0))
+        while True:
+            text = await generate_filler(list(_context_turns))
+            if text:
+                logger.debug(f"[filler] saying: {text!r}")
+                await session.say(text, allow_interruptions=True)
+            await asyncio.sleep(random.uniform(5.0, 8.0))
+
+    @session.on("user_state_changed")
+    def on_user_state_changed(ev):
+        """Start/stop filler and silence timers based on VAD state."""
+        nonlocal user_is_speaking
+        is_speaking = ev.new_state == "speaking"
+        user_is_speaking = is_speaking
+        silence_watchdog.on_user_state_changed(is_speaking)
+
+        if is_speaking:
+            if agent_instance._filler_task and not agent_instance._filler_task.done():
+                agent_instance._filler_task.cancel()
+            agent_instance._filler_task = asyncio.create_task(_filler_loop())
+            logger.debug("[filler] user started speaking — loop started")
+        else:
+            if agent_instance._filler_task and not agent_instance._filler_task.done():
+                agent_instance._filler_task.cancel()
+                logger.debug("[filler] user stopped speaking — loop cancelled")
+
+    # ─────────────────────────────────────────────────────────────────────────
 
     participant = await ctx.wait_for_participant()
     logger.info(
@@ -113,6 +181,9 @@ async def entrypoint(ctx: JobContext):
         and not participant_left.is_set()
     ):
         await asyncio.sleep(1)
+
+    agent_idle_shutdown.stop()
+    silence_watchdog.stop()
 
 
 if __name__ == "__main__":

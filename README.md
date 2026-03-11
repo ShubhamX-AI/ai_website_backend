@@ -13,6 +13,8 @@ A LiveKit-powered AI voice agent backend for Indus Net Technologies website, pro
 - **User Context Management**: Tracks user identity, email, and phone with dynamic prompt updates
 - **Multi-language Support**: English, Hindi, and Bengali with natural code-mixing (Hinglish/Banglish)
 - **Background Audio**: Ambient office sounds and typing effects during processing
+- **Silence Handling**: Uses a dedicated silence watchdog helper with two generic reprompts before ending the session
+- **Ultimate Idle Switch**: If the agent remains in idle state for 20 seconds, the session is force-closed
 
 ## Architecture
 
@@ -21,7 +23,7 @@ src/
 ├── agents/              # AI Agent logic
 │   ├── indusnet/       # Indusnet-specific agent implementation
 │   │   ├── handlers/   # LiveKit data handlers
-│   │   ├── helpers/    # Packet + vector search helpers
+│   │   ├── helpers/    # Packet, vector search, filler, and silence watchdog helpers
 │   │   ├── tools/      # LiveKit function tools
 │   │   ├── agent.py    # Main agent composition
 │   │   ├── constants.py
@@ -165,6 +167,8 @@ GET /api/getToken?user_id=<uuid>&name=guest&email=optional@domain.com&agent=indu
 - Real-time conversation with GPT-4 Realtime model
 - Sonic-3 TTS by Cartesia for natural voice output with humanization prompts
 - Automatic transcription and context-aware responses
+- Silence watchdog helper that tracks expected replies and sends two short generic reprompts before call shutdown
+- Agent idle-state timeout switch that shuts down the session after 20 seconds in idle
 - Noise cancellation support for SIP calls
 - Multi-language support (English, Hindi, Bengali) with natural code-mixing
 

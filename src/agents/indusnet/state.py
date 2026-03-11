@@ -43,13 +43,23 @@ class AgentState:
         self._last_email_recipient: Optional[str] = None
         self._last_email_sent_at: Optional[str] = None
 
+        # ── Filler State ───────────────────────────────────────────
+        self._filler_task: asyncio.Task | None = None
+        self._filler_last_fired_at: float = (
+            0.0  # monotonic clock, prevents cooldown spam
+        )
+
         # ── Location State ─────────────────────────────────────────
-        self._location_status: Optional[str] = None  # "success" | "denied" | "unsupported"
+        self._location_status: Optional[str] = (
+            None  # "success" | "denied" | "unsupported"
+        )
         self._user_lat: Optional[float] = None
         self._user_lng: Optional[float] = None
         self._user_address: Optional[str] = None
         self._location_accuracy: Optional[float] = None
-        self._location_event: asyncio.Event = asyncio.Event()  # fired when frontend responds
+        self._location_event: asyncio.Event = (
+            asyncio.Event()
+        )  # fired when frontend responds
 
     # ── Snapshot write ──────────────────────────────────────────────────────
 
