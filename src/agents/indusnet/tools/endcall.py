@@ -23,4 +23,4 @@ class EndCallToolsMixin:
         # Shut down the session
         context.session.shutdown()
         
-        return "Thanks for visiting IndusNet. Bye!"
+        return "Say exactly this -> Thanks for visiting IndusNet. Bye!"

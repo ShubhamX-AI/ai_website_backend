@@ -72,6 +72,9 @@ async def generate_filler(context: list[dict]) -> str | None:
         text = response.choices[0].message.content.strip()
         _recent_fillers.append(text)
         logger.debug(f"[filler] generated: {text!r}")
+
+        # Reduce the volume of the text
+        text = f'<volume ratio="0.8"/>{text}'
         return text
     except Exception as e:
         logger.warning(f"[filler] generation failed (skipping): {e}")

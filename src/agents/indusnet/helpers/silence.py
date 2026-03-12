@@ -4,7 +4,7 @@ from typing import Final
 
 from livekit.agents import AgentSession
 
-REPROMPT_INTERVAL_SEC: Final[float] = 6.0
+REPROMPT_INTERVAL_SEC: Final[float] = 10.0
 MAX_REPROMPTS: Final[int] = 2
 AGENT_IDLE_TIMEOUT_SEC: Final[float] = 30.0
 
@@ -121,12 +121,9 @@ class SilenceWatchdogController:
                     self._max_reprompts,
                 )
                 self._skip_next_assistant_message = True
-                await self._session.generate_reply(
-                    instructions=(
-                        "The user seems silent. Ask in one short, friendly sentence if they are still there.\n\n"
-                        "and request a quick response."
-                    )
-                )
+                await self._session.say("Sorry, I didn't catch that. Are you still there?", allow_interruptions=True)
+                # Wait for 5 sec
+                await asyncio.sleep(5.0)
         except asyncio.CancelledError:
             self._logger.debug("[silence] watchdog cancelled")
             raise
