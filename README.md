@@ -8,6 +8,7 @@ A LiveKit-powered AI voice agent backend for Indus Net Technologies website, pro
 - **Dynamic UI Generation**: Generates 1-4 visual flashcards synchronized with voice responses using OpenAI o4-mini
 - **Smart Deduplication**: UI context synchronization prevents duplicate content from being displayed
 - **Knowledge Base Search**: Vector database powered by ChromaDB with Indus Net company information
+- **Internet Search Tool**: SearXNG-powered web search tool for broader lookup when needed
 - **Contact Form Workflow**: Two-step preview and submit process for user inquiries
 - **Submission Receipt Emails**: Contact requests and job applications email a receipt copy with a reference ID
 - **User Context Management**: Tracks user identity, email, and phone with dynamic prompt updates
@@ -49,6 +50,7 @@ src/
     │       ├── context_email.html
     │       └── submission_receipt.html
     ├── map/            # Google Maps integration
+    ├── search/         # SearXNG internet search integration
     ├── vectordb/       # ChromaDB vector knowledge base
     └── whatsapp/       # WhatsApp message service
 ```
@@ -181,7 +183,13 @@ GET /api/getToken?user_id=<uuid>&name=guest&email=optional@domain.com&agent=indu
 - Returns formatted markdown results with metadata
 - Fetches top 5 most relevant documents using vector similarity
 
-#### 2. UI Flashcard Publishing
+#### 2. Internet Search
+
+- **Tool**: `search_internet_knowledge(question: str)`
+- Searches the internet via SearXNG and returns cleaned snippets for LLM synthesis
+- Intended as a fallback when KB results are not useful
+
+#### 3. UI Flashcard Publishing
 
 - **Tool**: `publish_ui_stream(user_input: str, agent_response: str)`
 - Generates 1-4 visual flashcards using OpenAI o4-mini
@@ -189,14 +197,14 @@ GET /api/getToken?user_id=<uuid>&name=guest&email=optional@domain.com&agent=indu
 - Streams flashcards in real-time to the frontend
 - Includes deduplication based on active UI elements
 
-#### 3. User Information Management
+#### 4. User Information Management
 
 - **Tool**: `get_user_info(user_name: str, user_email: str, user_phone: str)`
 - Captures and syncs user identity to the system
 - Updates agent instructions dynamically with user context
 - Publishes user details to frontend via data packets
 
-#### 4. Contact Form Preview
+#### 5. Contact Form Preview
 
 - **Tool**: `preview_contact_form(user_name, user_email, user_phone, contact_details)`
 - Displays contact form on UI for user review
@@ -204,14 +212,14 @@ GET /api/getToken?user_id=<uuid>&name=guest&email=optional@domain.com&agent=indu
 - Agent asks follow-up questions to understand user's specific needs
 - Waits for user confirmation before submission
 
-#### 5. Contact Form Submission
+#### 6. Contact Form Submission
 
 - **Tool**: `submit_contact_form(user_name, user_email, user_phone, contact_details)`
 - Submits contact form after user confirmation
 - Only called after `preview_contact_form` and explicit user approval
 - Emails the user a receipt copy with a reference ID
 
-#### 6. Job Application Workflow
+#### 7. Job Application Workflow
 
 - **Tools**: `preview_job_application(...)`, `submit_job_application(...)`
 - Displays the application form for review before submission

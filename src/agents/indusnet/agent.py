@@ -4,6 +4,7 @@ from src.agents.prompts.humanization import TTS_HUMANIFICATION_CARTESIA
 from src.services.llm.ui_agent import UIAgentFunctions
 from src.services.vectordb.vectordb_svc import VectorStoreService
 from src.services.map.googlemap.services import GoogleMapService
+from src.services.search.searxng_svc import SearXNGService
 
 # ── Helpers ────────────────────────────────────────────────────────────────
 from src.agents.indusnet.helpers.packet import PacketHelperMixin
@@ -67,6 +68,7 @@ class IndusNetAgent(
         # ── Service Clients ────────────────────────────────────────
         self.ui_agent_functions = UIAgentFunctions()
         self.vector_store = VectorStoreService()
+        self.search_service = SearXNGService()
         self.google_map_service = GoogleMapService()
 
         # ── Runtime State (all fields defined in AgentState) ───────
