@@ -1,336 +1,305 @@
 # Indusnet AI Website Backend
 
-A LiveKit-powered AI voice agent backend for Indus Net Technologies website, providing intelligent conversational experiences with dynamic UI flashcard generation and interactive contact forms.
+LiveKit-based backend for an Indus Net website voice assistant.
+It runs two processes:
+- A FastAPI service for health checks and LiveKit token issuance.
+- A LiveKit agent worker for real-time voice conversations and tool execution.
 
-## Features
+## What This Project Does
 
-- **Voice AI Agent**: Real-time voice interaction using LiveKit Agents with GPT-4 Realtime
-- **Dynamic UI Generation**: Generates 1-4 visual flashcards synchronized with voice responses using OpenAI o4-mini
-- **Smart Deduplication**: UI context synchronization prevents duplicate content from being displayed
-- **Knowledge Base Search**: Vector database powered by ChromaDB with Indus Net company information
-- **Internet Search Tool**: SearXNG-powered web search tool for broader lookup when needed
-- **Contact Form Workflow**: Two-step preview and submit process for user inquiries
-- **Submission Receipt Emails**: Contact requests and job applications email a receipt copy with a reference ID
-- **User Context Management**: Tracks user identity, email, and phone with dynamic prompt updates
-- **Multi-language Support**: English, Hindi, and Bengali with natural code-mixing (Hinglish/Banglish)
-- **Background Audio**: Ambient office sounds and typing effects during processing
-- **Silence Handling**: Uses a dedicated silence watchdog helper with two generic reprompts before ending the session
-- **Ultimate Idle Switch**: If the agent remains in idle state for 20 seconds, the session is force-closed
+- Runs a realtime voice agent (`indusnet`) using LiveKit Agents.
+- Uses OpenAI realtime for conversation and Cartesia for TTS.
+- Provides tool-driven flows for:
+  - Knowledge base search (ChromaDB)
+  - Internet search (SearXNG)
+  - UI flashcard publishing and recall
+  - Contact form and job application preview/submit
+  - Meeting invite preview/send
+  - Location request + distance/route calculation
+  - Context delivery via email and WhatsApp
+  - Graceful call ending
 
-## Architecture
+## Runtime Flow
 
-```
-src/
-├── agents/              # AI Agent logic
-│   ├── indusnet/       # Indusnet-specific agent implementation
-│   │   ├── handlers/   # LiveKit data handlers
-│   │   ├── helpers/    # Packet, vector search, filler, and silence watchdog helpers
-│   │   ├── tools/      # LiveKit function tools
-│   │   ├── agent.py    # Main agent composition
-│   │   ├── constants.py
-│   │   ├── prompts.py  # Voice agent system prompt
-│   │   └── state.py    # Runtime state container
-│   ├── prompts/        # Shared prompts (TTS humanization)
-│   ├── base.py         # Base agent class
-│   └── session.py      # LiveKit session management
-├── api/                # FastAPI REST endpoints
-│   ├── routes/         # API route handlers
-│   │   ├── token.py    # Room token generation
-│   │   └── health.py   # Health check endpoint
-├── core/               # Core configuration
-│   ├── config.py       # Environment settings
-│   └── logger.py       # Logging setup
-└── services/           # External service integrations
-    ├── llm/            # OpenAI/LLM services (parsers, prompts, UI agent)
-    ├── livekit/        # LiveKit room & token management
-    ├── mail/           # Email services for summaries and submission receipts
-    │   ├── context_email.py      # Context summary email composition and delivery
-    │   ├── submission_receipt.py # Contact/job submission receipt emails
-    │   └── templates/            # Shared HTML email templates
-    │       ├── context_email.html
-    │       └── submission_receipt.html
-    ├── map/            # Google Maps integration
-    ├── search/         # SearXNG internet search integration
-    ├── vectordb/       # ChromaDB vector knowledge base
-    └── whatsapp/       # WhatsApp message service
+1. Client calls `GET /api/getToken`.
+2. API creates/uses a LiveKit room and dispatches the `indusnet` agent.
+3. Client joins the room with the returned JWT.
+4. Agent worker (`src/agents/session.py`) starts an `AgentSession` and loads `IndusNetAgent`.
+5. `IndusNetAgent` executes tools based on conversation intent and sends UI/data packets to frontend topics.
+
+## Project Structure
+
+```text
+.
+├── README.md
+├── pyproject.toml
+├── server_run.py
+├── run_both.sh
+├── docker-compose.yml
+├── Dockerfile
+├── assets/
+│   └── audio/
+│       ├── office-ambience_48k.wav
+│       └── typing-sound_48k.wav
+└── src/
+    ├── api/
+    │   ├── main.py
+    │   └── routes/
+    │       ├── health.py
+    │       └── token.py
+    ├── agents/
+    │   ├── base.py
+    │   ├── session.py
+    │   ├── prompts/
+    │   │   └── humanization.py
+    │   └── indusnet/
+    │       ├── agent.py
+    │       ├── prompts.py
+    │       ├── state.py
+    │       ├── constants.py
+    │       ├── handlers/
+    │       │   └── data_handler.py
+    │       ├── helpers/
+    │       │   ├── filler.py
+    │       │   ├── packet.py
+    │       │   ├── silence.py
+    │       │   └── vector_search.py
+    │       └── tools/
+    │           ├── knowledge.py
+    │           ├── ui_publisher.py
+    │           ├── forms.py
+    │           ├── meeting.py
+    │           ├── location.py
+    │           ├── email.py
+    │           ├── whatsapp.py
+    │           ├── user.py
+    │           └── endcall.py
+    ├── core/
+    │   ├── config.py
+    │   └── logger.py
+    └── services/
+        ├── livekit/
+        │   └── livekit_svc.py
+        ├── llm/
+        │   ├── client.py
+        │   ├── parsers.py
+        │   ├── prompts.py
+        │   ├── media_assets.py
+        │   └── ui_agent.py
+        ├── mail/
+        │   ├── calender_invite.py
+        │   ├── context_email.py
+        │   ├── submission_receipt.py
+        │   └── templates/
+        │       ├── context_email.html
+        │       └── submission_receipt.html
+        ├── map/googlemap/
+        │   └── services.py
+        ├── search/
+        │   └── searxng_svc.py
+        ├── vectordb/
+        │   ├── vectordb_svc.py
+        │   ├── chroma_db/
+        │   └── chroma_db_mem0/
+        └── whatsapp/
+            └── context_whatsapp.py
 ```
 
 ## Prerequisites
 
-- Python 3.12+
-- UV package manager (recommended) or pip
-- LiveKit server (self-hosted or cloud)
+- Python `>=3.12`
+- `uv` (recommended) or `pip`
+- LiveKit server credentials
 - OpenAI API key
 - Cartesia API key
 
 ## Environment Variables
 
-Create a `.env` file in the project root:
+Create `.env` in project root.
+
+### Required for core runtime
 
 ```env
-# LiveKit Configuration
-LIVEKIT_API_KEY=your_livekit_api_key
-LIVEKIT_API_SECRET=your_livekit_api_secret
-LIVEKIT_URL=wss://your-livekit-server.com
+LIVEKIT_API_KEY=...
+LIVEKIT_API_SECRET=...
+LIVEKIT_URL=wss://...
+OPENAI_API_KEY=...
+CARTESIA_API_KEY=...
+```
 
-# OpenAI Configuration
-OPENAI_API_KEY=your_openai_api_key
+### Required for specific tools/features
 
-# Cartesia TTS Configuration
-CARTESIA_API_KEY=your_cartesia_api_key
+```env
+# Internet search tool
+SEARXNG_BASE_URL=http://127.0.0.1:8090
 
-# Email Configuration
+# Email tools (context email + submission receipts + calendar invites)
 SMTP_SERVER=smtp.gmail.com
 SMTP_PORT=587
 SENDER_EMAIL=your-email@example.com
 SENDER_PASSWORD=your-app-password
 
-# Server Configuration
-PORT=8000
+# WhatsApp context delivery
+WHATSAPP_PHONE_NUMBER_ID=...
+WHATSAPP_ACCESS_TOKEN=...
+WHATSAPP_TEMPLATE_NAME=utility_agui_agent
+
+# Location/directions tools
+GOOGLE_API_KEY=...
 ```
+
+### Optional
+
+```env
+PORT=8000
+EMAIL_SUMMARY_MODEL=gpt-4o-mini
+```
+
+Note:
+- `DATABASE_URL` may exist in local `.env`, but this repo currently does not use it in runtime code.
 
 ## Installation
 
-### Using UV (Recommended)
+### Using uv (recommended)
 
 ```bash
-# Install dependencies
 uv sync
-
-# Activate virtual environment
-source .venv/bin/activate  # Linux/Mac
-# or
-.venv\Scripts\activate  # Windows
+source .venv/bin/activate
 ```
 
 ### Using pip
 
 ```bash
-# Create virtual environment
 python -m venv .venv
 source .venv/bin/activate
-
-# Install dependencies
 pip install -e .
 ```
 
-## Running the Application
+## Running Locally
 
-### 1. Start the API Server
+### API server
 
 ```bash
-# Development mode
+# Dev
 python -m src.api.main
 
-# Production mode (with Gunicorn)
+# Prod-style
 python server_run.py
 ```
 
-The API server will start on `http://localhost:8000`
+API base URL: `http://localhost:8000`
 
-### 2. Start the LiveKit Agent
+### Agent worker
 
 ```bash
-# Development mode with auto-reload
+# Dev mode
 python -m src.agents.session dev
 
-# Production mode
+# Start mode
 python -m src.agents.session start
+```
+
+### Run both together
+
+```bash
+bash run_both.sh
+```
+
+## Docker
+
+`docker-compose.yml` defines two services:
+- `api`: runs `python server_run.py`
+- `agent`: runs `python -m src.agents.session start`
+
+Start:
+
+```bash
+docker compose up --build
 ```
 
 ## API Endpoints
 
-### Health Check
+### Health
 
-```
+```http
 GET /health
 ```
 
-### Generate Room Token
+Response: plain text `ok`
 
+### LiveKit token
+
+```http
+GET /api/getToken?user_id=<uuid>&name=guest&email=optional@domain.com&agent=indusnet&room=optional-room
 ```
-GET /api/getToken?user_id=<uuid>&name=guest&email=optional@domain.com&agent=indusnet&room=optional-room-name
-```
 
-**Query Parameters:**
+Query params:
+- `user_id` (required)
+- `name` (optional, default `guest`)
+- `email` (optional)
+- `agent` (optional, must be `indusnet`)
+- `room` (optional; auto-created if omitted)
 
-- `user_id`: Required persistent user identifier (UUID)
-- `name`: Display name (default: "guest")
-- `email`: Optional user email
-- `agent`: Agent type (must be "indusnet")
-- `room`: Optional room name (auto-generated if not provided)
+Returns: JWT token as plain text.
 
-**Response:** JWT token for LiveKit room access
+## Agent Tools (Current)
 
-## Agent Features
+- `search_indus_net_knowledge_base(question)`
+- `search_internet_knowledge(question)`
+- `publish_ui_stream(user_input, agent_response)`
+- `recall_and_republish_ui_content(agent_response)`
+- `publish_global_presence(user_input="global presence")`
+- `publish_nearby_offices(offices)`
+- `get_ui_history()`
+- `get_user_info(user_name, user_email="", user_phone="")`
+- `preview_contact_form(...)`
+- `submit_contact_form(...)`
+- `preview_job_application(...)`
+- `submit_job_application(...)`
+- `preview_meeting_invite(...)`
+- `schedule_meeting(...)`
+- `request_user_location()`
+- `calculate_distance_to_destination(destination)`
+- `send_context_email(recipient_email="", screens_back=0)`
+- `send_context_whatsapp(recipient_phone="", screens_back=0)`
+- `end_call()`
 
-### Voice Interaction
+## Model Usage (Current)
 
-- Real-time conversation with GPT-4 Realtime model
-- Sonic-3 TTS by Cartesia for natural voice output with humanization prompts
-- Automatic transcription and context-aware responses
-- Silence watchdog helper that tracks expected replies and sends two short generic reprompts before call shutdown
-- Agent idle-state timeout switch that shuts down the session after 20 seconds in idle
-- Noise cancellation support for SIP calls
-- Multi-language support (English, Hindi, Bengali) with natural code-mixing
+- Conversation LLM: `gpt-realtime`
+- Realtime transcription: `gpt-4o-mini-transcribe`
+- UI flashcard generation: `gpt-4o-mini`
+- Filler phrase generation: `gpt-4o-mini`
+- TTS: Cartesia `sonic-3`
+- Embeddings: `text-embedding-3-small`
 
-### Agent Tools
+## Notes and Operational Caveats
 
-#### 1. Knowledge Base Search
-
-- **Tool**: `search_indus_net_knowledge_base(question: str)`
-- Searches the official Indus Net knowledge base for company information
-- Returns formatted markdown results with metadata
-- Fetches top 5 most relevant documents using vector similarity
-
-#### 2. Internet Search
-
-- **Tool**: `search_internet_knowledge(question: str)`
-- Searches the internet via SearXNG and returns cleaned snippets for LLM synthesis
-- Intended as a fallback when KB results are not useful
-
-#### 3. UI Flashcard Publishing
-
-- **Tool**: `publish_ui_stream(user_input: str, agent_response: str)`
-- Generates 1-4 visual flashcards using OpenAI o4-mini
-- Runs asynchronously to avoid delaying voice responses
-- Streams flashcards in real-time to the frontend
-- Includes deduplication based on active UI elements
-
-#### 4. User Information Management
-
-- **Tool**: `get_user_info(user_name: str, user_email: str, user_phone: str)`
-- Captures and syncs user identity to the system
-- Updates agent instructions dynamically with user context
-- Publishes user details to frontend via data packets
-
-#### 5. Contact Form Preview
-
-- **Tool**: `preview_contact_form(user_name, user_email, user_phone, contact_details)`
-- Displays contact form on UI for user review
-- Requires all fields (name, email, phone, reason) before calling
-- Agent asks follow-up questions to understand user's specific needs
-- Waits for user confirmation before submission
-
-#### 6. Contact Form Submission
-
-- **Tool**: `submit_contact_form(user_name, user_email, user_phone, contact_details)`
-- Submits contact form after user confirmation
-- Only called after `preview_contact_form` and explicit user approval
-- Emails the user a receipt copy with a reference ID
-
-#### 7. Job Application Workflow
-
-- **Tools**: `preview_job_application(...)`, `submit_job_application(...)`
-- Displays the application form for review before submission
-- Emails the user an application receipt with a reference ID after submission
-
-### UI Synchronization
-
-- Generates 1-4 flashcards per interaction using structured streaming
-- Smart deduplication: tracks active UI elements to prevent redundant content
-- Supports multiple visual intents (neutral, urgent, success, warning, processing, cyberpunk)
-- Dynamic media from curated asset map or stock sources (Pixabay/Pexels)
-- UI context synchronization: viewport, theme, screen size, max visible cards
-- Stream grouping with `stream_id` and `card_index` for proper ordering
-
-### Knowledge Base
-
-- Pre-loaded Indus Net Technologies information
-- Vector similarity search using ChromaDB
-- Text embeddings via OpenAI `text-embedding-3-small`
-- Excel data source: `src/services/vectordb/chroma_db/website_extracted_data.xlsx`
-- Formatted results with dynamic metadata extraction
-
-## Project Structure Details
-
-### Agent Types
-
-- **IndusNetAgent**: Main agent for Indus Net website interactions
-  - Knowledge base search tool
-  - UI flashcard publishing tool (with streaming and deduplication)
-  - Contact form preview and submission tools
-  - User information management tool
-  - Multi-language support (English, Hindi, Bengali with code-mixing)
-  - Dynamic instruction updates based on user and UI context
-
-### UI Flashcard Schema
-
-Cards are generated with the following properties:
-
-- `type`: Always "flashcard"
-- `id`: Semantic kebab-case identifier for deduplication (e.g., "cloud-migration-services")
-- `title`: Card heading (5-10 words, scannable)
-- `value`: Main content (1-3 sentences, markdown supported)
-- `visual_intent`: Color theme (neutral, urgent, success, warning, processing, cyberpunk)
-- `animation_style`: Entry animation (slide, pop, fade, flip, scale)
-- `icon`: Lucide icon reference with type and fallback
-- `media`: Images/videos from curated asset map or stock sources (Pixabay/Pexels)
-  - Prioritizes curated assets for known entities (CEO, offices, partners, case studies)
-  - Falls back to IT/software-themed stock media with contextual queries
-- `layout`: Card layout type (default, horizontal, centered, media-top)
-- `size`: Card size (sm, md, lg) - lg for primary card, md for supporting
-- `accentColor`: Theme color (emerald, blue, amber, indigo, rose, violet, orange, zinc)
-- `stream_id`: UUID for grouping cards in the same response
-- `card_index`: Position in the stream for ordering
-
-## Development
-
-### File Naming Conventions
-
-- Modules: `snake_case.py`
-- Classes: `PascalCase`
-- Functions/Variables: `snake_case`
-- Services: `*_svc.py` suffix
-
-### Key Files
-
-- `src/agents/indusnet/agent.py`: Main agent logic with tools and data handling
-- `src/agents/indusnet/prompts.py`: Voice agent system prompt (v4.0)
-- `src/agents/prompts/humanization.py`: TTS humanization prompt for Cartesia
-- `src/services/openai/indusnet/ui_system_prompt.py`: UI flashcard generation prompt
-- `src/services/openai/indusnet/openai_scv.py`: OpenAI o4-mini streaming service for UI
-- `src/agents/session.py`: LiveKit session entry point
-- `src/api/routes/token.py`: Room token generation endpoint
-- `src/services/vectordb/vectordb_svc.py`: ChromaDB vector search service
-
-## Deployment
-
-### Docker
-
-See `docker-compose.yml` for containerized deployment.
-
-### Production Considerations
-
-- Use `server_run.py` with Gunicorn for production API server
-- Configure proper CORS origins in `src/api/main.py`
-- Set up reverse proxy (Nginx/Caddy) for HTTPS
-- Monitor LiveKit agent process with systemd or supervisor
-- Implement rate limiting for token generation endpoint
+- CORS is currently configured as open (`*`) in `src/api/main.py`; tighten for production.
+- SearXNG defaults to `http://127.0.0.1:8090`; ensure a reachable instance in your environment.
+- Vector stores are persisted locally under `src/services/vectordb/chroma_db*`.
+- Logs are written to `logs/app.log` via rotating file handler.
 
 ## Troubleshooting
 
-### Import Errors
+### `getToken` fails
 
-- Ensure virtual environment is activated
-- Run `uv sync` or `pip install -e .` to install dependencies
+- Verify LiveKit credentials and URL.
+- Ensure agent worker is running and can connect to LiveKit.
 
-### LiveKit Connection Issues
+### Agent starts but tools fail
 
-- Verify `LIVEKIT_URL`, `LIVEKIT_API_KEY`, and `LIVEKIT_API_SECRET`
-- Check LiveKit server status
-- Ensure firewall allows WebSocket connections
+- Check missing feature-specific env vars (`GOOGLE_API_KEY`, SMTP vars, WhatsApp vars, `SEARXNG_BASE_URL`).
 
-### Agent Not Responding
+### No UI flashcards
 
-- Check OpenAI API key is valid
-- Verify Cartesia API key for TTS
-- Review logs in `src/core/logger.py` output
+- Verify `OPENAI_API_KEY` and that frontend is subscribed to data packet topics.
+
+### Email or WhatsApp delivery fails
+
+- Confirm sender credentials / Meta credentials and template setup.
+- Review `logs/app.log` for detailed provider errors.
 
 ## License
 
 Proprietary - Indus Net Technologies
-
-## Support
-
-For issues or questions, contact the Indus Net Technologies development team.
