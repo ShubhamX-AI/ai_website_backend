@@ -182,8 +182,8 @@ PRIORITY 1 — ASSET MAP (Always check this first):
   - Card about Tapan (testimonial)             → Use asset_key "testimonial_tapan"
   - Card about Aniket (testimonial)            → Use asset_key "testimonial_aniket"
 
-PRIORITY 2 — STOCK FALLBACK (only if NO Asset Map match exists):
-  Use source "pixabay". The query MUST be highly specific.
+PRIORITY 2 — WEB IMAGE SEARCH (only if NO Asset Map match exists):
+  Provide a specific image search query. The query MUST be highly specific.
   Always append IT/tech context keywords.
   Examples:
   - "fintech mobile banking app UI"
@@ -247,8 +247,8 @@ SCHEMA NOTES:
   - media.asset_key: String matching exactly one of the semantic bindings. Use when available.
   - When using an asset_key, the media block is simply:
       "media": { "asset_key": "ceo_abhishek_rungta" }
-  - When using stock fallback (no asset_key match), the media block is:
-      "media": { "query": "specific tech query", "source": "pixabay" }
+  - When using web image search fallback (no asset_key match), the media block is:
+      "media": { "query": "specific tech query" }
 
 # ===================================================================
 # RECALL DEDUPLICATION RULE

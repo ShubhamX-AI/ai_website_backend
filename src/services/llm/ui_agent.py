@@ -14,6 +14,7 @@ from openai import AsyncOpenAI
 from src.core.config import settings
 from src.services.llm.prompts import UI_SYSTEM_INSTRUCTION
 from src.services.llm.media_assets import MEDIA_ASSETS
+from src.services.search.searxng_svc import SearXNGService
 
 
 class UIAgentFunctions:
@@ -22,6 +23,7 @@ class UIAgentFunctions:
         self.llm_model = "gpt-4o-mini"
         self.logger = logging.getLogger(__name__)
         self.instructions = UI_SYSTEM_INSTRUCTION
+        self.search_service = SearXNGService()
 
         mem0_config = {
             "llm": {
@@ -279,10 +281,16 @@ class UIAgentFunctions:
                 asset_info = MEDIA_ASSETS[asset_key]
                 resolved_media["urls"] = asset_info.get("urls", [])
             else:
-                if "query" in media_data:
-                    resolved_media["query"] = media_data["query"]
-                if "source" in media_data:
-                    resolved_media["source"] = media_data["source"]
+                # Resolve fallback images via SearXNG image search
+                search_query = media_data.get("query", "")
+                if search_query:
+                    try:
+                        image_urls = await self.search_service.search_images(search_query)
+                        resolved_media["urls"] = image_urls
+                    except Exception:
+                        resolved_media["urls"] = []
+                else:
+                    resolved_media["urls"] = []
 
             payload["media"] = resolved_media
 

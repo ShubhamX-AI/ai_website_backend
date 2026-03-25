@@ -94,6 +94,38 @@ class SearXNGService:
             "error": False,
         }
 
+    async def search_images(
+        self,
+        query: str,
+        limit: int = 3,
+        timeout: float = DEFAULT_TIMEOUT,
+    ) -> list[str]:
+        """Search SearXNG for images and return a list of image URLs."""
+        q = query.strip()
+        if not q:
+            return []
+
+        call_timeout = timeout or self.timeout
+        try:
+            data = await self._get_json(
+                f"{self.base_url}/search",
+                {"q": q, "format": "json", "categories": "images"},
+                call_timeout,
+            )
+        except (httpx.HTTPError, ValueError):
+            return []
+
+        # Extract image URLs: prefer img_src, fall back to thumbnail
+        urls: list[str] = []
+        for item in data.get("results", []):
+            url = item.get("img_src") or item.get("thumbnail") or ""
+            if url:
+                urls.append(url)
+            if len(urls) >= limit:
+                break
+
+        return urls
+
     @staticmethod
     def preprocess_for_llm(search_result: dict[str, Any], min_snippet_len: int = 40) -> str:
         """Strip low-value snippets and return compact plaintext for LLM."""
