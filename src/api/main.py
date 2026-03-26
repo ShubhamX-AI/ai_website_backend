@@ -1,5 +1,7 @@
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from src.api.routes import token, health
 from src.core.logger import setup_logging
 
@@ -19,6 +21,11 @@ app.add_middleware(
 # Include routers
 app.include_router(token.router, prefix="/api")
 app.include_router(health.router)
+
+# Serve built MkDocs static site at /documentation (run `mkdocs build` first)
+_DOCS_SITE = os.path.join(os.path.dirname(__file__), "..", "..", "site")
+if os.path.isdir(_DOCS_SITE):
+    app.mount("/documentation", StaticFiles(directory=_DOCS_SITE, html=True), name="documentation")
 
 if __name__ == "__main__":
     import uvicorn

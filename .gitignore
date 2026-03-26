@@ -12,3 +12,6 @@ wheels/
 
 # Logs
 logs/
+
+# MkDocs build output
+site/

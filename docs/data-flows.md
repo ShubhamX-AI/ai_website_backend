@@ -45,7 +45,7 @@ flowchart TD
     C[Raw card JSON chunk] --> N[_normalize_card_payload]
     N --> M{media.asset_key mapped?}
     M -->|Yes| A[Resolve from MEDIA_ASSETS urls]
-    M -->|No| I[search_images(query) via SearXNG]
+    M -->|No| I["search_images(query) via SearXNG"]
     A --> O[Publish flashcard]
     I --> O
     O --> B[Batch complete]
@@ -145,7 +145,7 @@ sequenceDiagram
 
 ```mermaid
 flowchart TD
-    S[send_context_email / send_context_whatsapp] --> RS[_resolve_snapshot(screens_back)]
+    S["send_context_email / send_context_whatsapp"] --> RS["_resolve_snapshot(screens_back)"]
     RS --> H{session snapshot exists?}
     H -->|Yes| SNAP[Use current/back snapshot]
     H -->|No + user_id| MEM[Mem0 recall fallback]
