@@ -1,0 +1,31 @@
+site_name: Indusnet AI Backend Docs
+site_description: Architecture, data flows, and tools reference for the Indusnet voice agent backend.
+docs_dir: docs
+site_dir: site
+
+theme:
+  name: material
+  palette:
+    scheme: slate
+    primary: indigo
+    accent: indigo
+  features:
+    - navigation.tabs
+    - navigation.top
+    - content.code.copy
+
+nav:
+  - Architecture: architecture.md
+  - Data Flows: data-flows.md
+  - Tools Reference: tools.md
+
+markdown_extensions:
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.highlight
+  - admonition
+  - toc:
+      permalink: true
