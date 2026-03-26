@@ -32,11 +32,21 @@ sequenceDiagram
 
 ```mermaid
 flowchart LR
-    Q[Question requires web data] --> S[search_internet_knowledge]
-    S --> X[SearXNG /search]
-    X --> P[preprocess_for_llm]
-    P --> R[cleaned snippets returned to LLM]
+    Q[Question requires web data] --> E[_enrich_query strips conversational fluff]
+    E --> S[search_internet_knowledge]
+    S --> G[SearXNG general search]
+    S --> N[SearXNG news search]
+    S --> I[SearXNG IT/tech search]
+    G --> PG[preprocess_for_llm]
+    N --> PN[preprocess_news_for_llm]
+    I --> PI[preprocess_for_llm]
+    PG --> R["Sectioned result: [General] + [News] + [Tech / IT]"]
+    PN --> R
+    PI --> R
+    R --> LLM[cleaned snippets returned to LLM]
 ```
+
+> All three searches run concurrently via `asyncio.gather`. The same enriched query is also used by the image search that drives flashcard visuals on the frontend.
 
 ## 3) Flashcard Media + Memory Lifecycle
 
@@ -119,6 +129,27 @@ sequenceDiagram
 
 ## 7) Location + Directions + Polyline
 
+Two paths depending on whether the user provides a place name or asks for GPS.
+
+**Path A — User states a place name (no GPS needed)**
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant A as Agent LLM
+    participant L as LocationTools
+    participant GM as GoogleMapService
+    participant FE as Frontend
+
+    A->>L: calculate_distance_to_destination(destination, origin_place="Salt Lake", travel_mode="driving")
+    L->>GM: geocode origin_place to coordinates
+    L->>GM: computeRoutes(origin_coords, destination) + polyline
+    L->>FE: ui.location_request type=map.polyline
+    L-->>A: spoken distance/time summary
+```
+
+**Path B — User explicitly requests GPS location**
+
 ```mermaid
 sequenceDiagram
     autonumber
@@ -140,6 +171,8 @@ sequenceDiagram
     L->>FE: ui.location_request type=map.polyline
     L-->>A: spoken distance/time summary
 ```
+
+> `request_user_location` is only called when the user explicitly says "use my GPS" or "from my exact location". For all other distance/directions requests the agent asks for a place name and uses Path A.
 
 ## 8) Context Sharing (Email + WhatsApp)
 

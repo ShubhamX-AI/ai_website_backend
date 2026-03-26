@@ -277,7 +277,7 @@ Returns: JWT token as plain text.
 - `preview_meeting_invite(...)`
 - `schedule_meeting(...)`
 - `request_user_location()`
-- `calculate_distance_to_destination(destination)`
+- `calculate_distance_to_destination(destination, origin_place?, travel_mode?)`
 - `send_context_email(recipient_email="", screens_back=0)`
 - `send_context_whatsapp(recipient_phone="", screens_back=0)`
 - `end_call()`

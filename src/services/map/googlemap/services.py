@@ -7,14 +7,33 @@ from typing import Optional, Dict, Any
 class GoogleMapService:
     BASE_URL = "https://routes.googleapis.com/directions/v2:computeRoutes"
 
-    # Only request the fields we actually use.
-    # This is the key cost-saving feature of the Routes API.
     FIELD_MASK = ",".join([
         "routes.legs.distanceMeters",
         "routes.legs.duration",
         "routes.legs.endLocation",
         "routes.polyline.encodedPolyline",
     ])
+
+    # Maps user-spoken words to Google Routes API travelMode values.
+    _TRAVEL_MODE_MAP: dict[str, str] = {
+        "driving": "DRIVE", "drive": "DRIVE", "car": "DRIVE",
+        "walking": "WALK", "walk": "WALK", "on foot": "WALK", "foot": "WALK",
+        "bicycling": "BICYCLE", "cycling": "BICYCLE", "bike": "BICYCLE", "bicycle": "BICYCLE",
+        "transit": "TRANSIT", "public transport": "TRANSIT", "bus": "TRANSIT", "train": "TRANSIT",
+        "motorcycle": "TWO_WHEELER", "scooter": "TWO_WHEELER", "two wheeler": "TWO_WHEELER",
+    }
+
+    # Spoken label for each API mode (used in agent responses).
+    _MODE_LABEL: dict[str, str] = {
+        "DRIVE": "by car",
+        "WALK": "on foot",
+        "BICYCLE": "by bicycle",
+        "TRANSIT": "by public transport",
+        "TWO_WHEELER": "by two-wheeler",
+    }
+
+    # TRAFFIC_AWARE is only valid for DRIVE; all other modes use TRAFFIC_UNAWARE.
+    _TRAFFIC_AWARE_MODES = {"DRIVE"}
 
     def __init__(self) -> None:
         self.api_key = os.getenv("GOOGLE_API_KEY", "")
@@ -35,20 +54,25 @@ class GoogleMapService:
         origin_lat: float,
         origin_lng: float,
         destination: str,
+        travel_mode: str = "driving",
     ) -> Optional[Dict[str, Any]]:
         """
-        Uses the Routes API (v2) to get distance, duration, and polyline
-        in a single POST request with a field mask so Google only computes
-        what we need — faster and cheaper than the old Directions API.
+        Uses the Routes API (v2) to get distance, duration, and polyline.
+        travel_mode accepts user-spoken words like "walking", "bike", "transit";
+        defaults to "driving". TRAFFIC_AWARE routing is applied only for DRIVE.
         """
         if not self.api_key:
             self.logger.error("Google Maps API key is not configured.")
             return None
 
+        # Normalise travel mode: user words → API constant, unknown → DRIVE
+        api_mode = self._TRAVEL_MODE_MAP.get(travel_mode.lower().strip(), "DRIVE")
+        routing_pref = "TRAFFIC_AWARE" if api_mode in self._TRAFFIC_AWARE_MODES else "TRAFFIC_UNAWARE"
+
         headers = {
             "Content-Type": "application/json",
             "X-Goog-Api-Key": self.api_key,
-            "X-Goog-FieldMask": self.FIELD_MASK,  # <-- only compute what we need
+            "X-Goog-FieldMask": self.FIELD_MASK,
         }
 
         body = {
@@ -61,10 +85,10 @@ class GoogleMapService:
                 }
             },
             "destination": {
-                "address": destination  # Routes API accepts raw address directly
+                "address": destination
             },
-            "travelMode": "DRIVE",
-            "routingPreference": "TRAFFIC_AWARE",  # uses live traffic, not available in old API
+            "travelMode": api_mode,
+            "routingPreference": routing_pref,
             "units": "METRIC",
         }
 
@@ -90,6 +114,8 @@ class GoogleMapService:
                 "duration_seconds": duration_seconds,
                 "duration_text": self._format_duration(duration_seconds),
                 "polyline": route["polyline"]["encodedPolyline"],
+                "travel_mode": api_mode,
+                "mode_label": self._MODE_LABEL.get(api_mode, "by car"),
                 "end_location": {
                     "lat": leg["endLocation"]["latLng"]["latitude"],
                     "lng": leg["endLocation"]["latLng"]["longitude"],

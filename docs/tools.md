@@ -7,7 +7,7 @@ Tool contract guide for `src/agents/indusnet/tools/*`.
 | Tool | Purpose | Required inputs | Side effects | Output shape |
 |---|---|---|---|---|
 | `search_indus_net_knowledge_base` | Vector DB search | `question` | Updates `self.db_results` | Markdown text results |
-| `search_internet_knowledge` | Web search via SearXNG | `question` | External HTTP call | Cleaned snippet text / failure string |
+| `search_internet_knowledge` | Parallel web/news/IT search via SearXNG; query is auto-enriched to remove conversational fluff | `question` | Three concurrent SearXNG calls (general, news, IT); images from same query drive frontend flashcard visuals | Sectioned snippet text (`[General]`, `[News]`, `[Tech / IT]`) or no-results string |
 | `publish_ui_stream` | Stream flashcards to UI | `user_input`, `agent_response` | Publishes `ui.flashcard`; stores snapshot; schedules async stream + Mem0 save | Confirmation string |
 | `recall_and_republish_ui_content` | Replay prior cards from memory | `agent_response` | Mem0 read; publishes recalled cards + end marker | Success/fallback string |
 | `publish_global_presence` | Show global locations | optional `user_input` | Publishes `ui.global_presense`; stores snapshot | Confirmation string |
@@ -17,8 +17,8 @@ Tool contract guide for `src/agents/indusnet/tools/*`.
 | `submit_contact_form` | Final contact submit | same as preview | Sends receipt email; publishes submit packet; stores snapshot | Success/fallback string |
 | `preview_job_application` | Review job application | `user_name`, `user_email`, `user_phone`, `job_details` | Publishes `ui.job_application`; stores snapshot | Prompt-for-confirmation string |
 | `submit_job_application` | Final job application submit | same as preview | Sends receipt email; publishes submit packet; stores snapshot | Success/fallback string |
-| `request_user_location` | Ask browser geolocation | none | Publishes location request; waits for `user.location`; updates location state | Status/result string |
-| `calculate_distance_to_destination` | Directions from user location | `destination` | Google Routes call; publishes `map.polyline`; stores snapshot | Distance/time string or failure |
+| `request_user_location` | Ask browser for GPS coordinates — only when user explicitly requests exact/current location | none | Publishes location request; waits for `user.location`; updates location state | Status/result string |
+| `calculate_distance_to_destination` | Directions from origin to destination | `destination` (required); `origin_place` (optional — place name stated by user; omit to use GPS); `travel_mode` (optional, default `driving`) | Resolves origin via geocoding if `origin_place` provided, else uses GPS state; Google Routes call; publishes `map.polyline`; stores snapshot | Distance/time string or failure |
 | `preview_meeting_invite` | Review meeting before send | `recipient_email`, `subject`, `description`, `location`, `start_time_iso`, `duration_hours?` | Publishes `ui.meeting_form`; stores snapshot | Prompt-for-confirmation string |
 | `schedule_meeting` | Send final calendar invite | same as preview | Sends calendar invite; publishes sent status; stores snapshot | Success/failure string |
 | `send_context_email` | Email summarized screen context | optional `recipient_email`, `screens_back?` | Snapshot resolve; SMTP send; publishes `ui.email_delivery` | Success/failure string |
@@ -30,7 +30,7 @@ Tool contract guide for `src/agents/indusnet/tools/*`.
 
 | Tool | Preconditions | Postconditions |
 |---|---|---|
-| `calculate_distance_to_destination` | `request_user_location` must complete with `status=success` | `ui.location_request` receives `map.polyline`; distance summary returned |
+| `calculate_distance_to_destination` | Either GPS state set (via `request_user_location`) OR `origin_place` provided directly | `map.polyline` published to `ui.location_request`; distance/time summary returned |
 | `schedule_meeting` | User should confirm after `preview_meeting_invite` | Invite send attempted; UI status packet published on success |
 | `submit_contact_form` / `submit_job_application` | User should confirm previewed data | Submit packet sent; receipt email attempted |
 | `send_context_email` / `send_context_whatsapp` | Valid recipient + available snapshot (or Mem0 fallback) | Delivery status packet published with sent/failed |
