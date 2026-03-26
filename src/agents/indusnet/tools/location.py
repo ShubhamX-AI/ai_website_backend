@@ -14,10 +14,11 @@ class LocationToolsMixin:
     @function_tool
     async def request_user_location(self, context: RunContext):
         """
-        Ask the frontend to share the user's current GPS location.
-        The browser will prompt the user for permission. Returns the location
-        status once the frontend responds (success, denied, or unsupported).
-        Wait for this tool's result before calling calculate_distance_to_destination.
+        Ask the frontend to share the user's exact GPS location via the browser.
+        Only call this when the user explicitly asks to use their current/exact/GPS
+        location (e.g. "from where I am right now", "use my GPS", "my current location").
+        If the user simply tells you a place name, use calculate_distance_to_destination
+        directly with origin_place — no need to call this first.
         """
         self.logger.info("📍 Requesting user location from frontend")
 
@@ -71,41 +72,76 @@ class LocationToolsMixin:
 
     @function_tool
     async def calculate_distance_to_destination(
-        self, context: RunContext, destination: str
+        self,
+        context: RunContext,
+        destination: str,
+        origin_place: str | None = None,
+        travel_mode: str = "driving",
     ):
         """
-        Calculate the driving distance and estimated travel time from the user's
-        current GPS location to a destination address or landmark.
+        Calculate distance and travel time from an origin to a destination.
 
-        IMPORTANT: You MUST call request_user_location first and confirm a
-        'success' status before calling this tool.
+        Origin resolution (pick one):
+        - If the user mentioned a place name as their starting point
+          (e.g. "I am at Park Street", "from Salt Lake"), pass it as `origin_place`.
+          The system resolves it to coordinates automatically — no GPS needed.
+        - If the user explicitly asked to use their exact/current GPS location
+          (e.g. "from my current location", "use my GPS"), leave `origin_place` empty
+          and call `request_user_location` first.
+
+        Travel mode (optional, defaults to "driving"):
+          "driving" | "walking" | "bicycling" | "transit" | "motorcycle"
+          Pick from what the user said; if they said nothing, use "driving".
 
         Args:
-            destination: The destination address or place name (e.g., "Indus Net Technologies, Kolkata").
+            destination: Destination address or place name.
+            origin_place: Origin place name stated by user. Omit to use GPS location.
+            travel_mode: How the user wants to travel. Defaults to "driving".
         """
-        if (
-            self._location_status != "success"
-            or self._user_lat is None
-            or self._user_lng is None
-        ):
-            return (
-                "I don't have the user's location yet. "
-                "Please call request_user_location first and ensure access was granted."
-            )
+        # ── Resolve origin coordinates ──────────────────────────────────────
+        if origin_place:
+            # User told us where they are — resolve via SearXNG map search
+            self.logger.info(f"🗺️ Resolving origin place via SearXNG: '{origin_place}'")
+            places = await self.search_service.search_map(origin_place, limit=1)
+            if not places:
+                return (
+                    f"I couldn't find '{origin_place}' on the map. "
+                    "Could you give me a more specific location or city name?"
+                )
+            origin_lat = places[0]["lat"]
+            origin_lng = places[0]["lng"]
+            # Use the resolved title as the display address for the map packet
+            origin_display = places[0]["title"] or places[0]["address"] or origin_place
+        else:
+            # Fall back to GPS location captured by request_user_location
+            if self._location_status != "success" or self._user_lat is None or self._user_lng is None:
+                return (
+                    "I don't have your location yet. You can either tell me where you are "
+                    "(e.g. 'I'm at Park Street') or allow me to use your GPS location."
+                )
+            origin_lat = self._user_lat
+            origin_lng = self._user_lng
+            origin_display = self._user_address or f"{origin_lat},{origin_lng}"
 
         self.logger.info(
-            f"📐 Calculating distance from ({self._user_lat}, {self._user_lng}) to '{destination}'"
+            f"📐 Calculating route from ({origin_lat}, {origin_lng}) to '{destination}' [{travel_mode}]"
         )
 
         try:
-            result = await self.google_map_service.get_directions(
-                origin_lat=self._user_lat,
-                origin_lng=self._user_lng,
-                destination=destination,
+            # Run directions and destination image fetch in parallel — image doesn't need route data
+            result, image_urls = await asyncio.gather(
+                self.google_map_service.get_directions(
+                    origin_lat=origin_lat,
+                    origin_lng=origin_lng,
+                    destination=destination,
+                    travel_mode=travel_mode,
+                ),
+                self.search_service.search_images(destination, limit=1),
+                return_exceptions=True,
             )
 
-            if not result:
-                return f"Could not geocode '{destination}'. Please check the address and try again."
+            if not result or isinstance(result, BaseException):
+                return f"Could not find a route to '{destination}'. Please check the address and try again."
 
             if "error" in result:
                 return f"The destination '{result['formatted_address']}' was found, but: {result['error']}."
@@ -114,22 +150,27 @@ class LocationToolsMixin:
             distance_text = result["distance_text"]
             duration_text = result["duration_text"]
             polyline = result["polyline"]
+            mode_label = result["mode_label"]          # e.g. "on foot", "by bicycle"
+            api_mode = result["travel_mode"]            # e.g. "WALK", "BICYCLE"
 
             self.logger.info(
-                f"✅ Distance to '{formatted_address}': {distance_text} ({duration_text})"
+                f"✅ Route to '{formatted_address}': {distance_text} ({duration_text}) [{api_mode}]"
             )
 
-            # Publish polyline to the frontend
+            destination_image = (image_urls[0] if isinstance(image_urls, list) and image_urls else "")
+
+            # Publish polyline + mode + destination image to the frontend
             await self._publish_data_packet(
                 {
                     "type": "map.polyline",
                     "data": {
                         "polyline": polyline,
-                        "origin": self._user_address,
+                        "origin": origin_display,
                         "destination": formatted_address,
-                        "travelMode": "driving",
+                        "travelMode": api_mode.lower(),
                         "distance": distance_text,
                         "duration": duration_text,
+                        "destination_image_url": destination_image,
                     },
                 },
                 TOPIC_UI_LOCATION_REQUEST,
@@ -138,22 +179,24 @@ class LocationToolsMixin:
                 snapshot_type="distance_map",
                 title="Distance and route",
                 summary=(
-                    f"Displayed route to {formatted_address}: {distance_text}, about {duration_text} by car."
+                    f"Displayed route to {formatted_address}: {distance_text}, "
+                    f"about {duration_text} {mode_label}."
                 ),
                 details={
-                    "origin": self._user_address,
+                    "origin": origin_display,
                     "destination": formatted_address,
                     "distance": distance_text,
                     "duration": duration_text,
+                    "travel_mode": api_mode,
                 },
                 source_tool="calculate_distance_to_destination",
             )
 
             return (
-                f"The destination '{formatted_address}' is approximately {distance_text} away "
-                f"and will take around {duration_text} by car from your current location."
+                f"'{formatted_address}' is approximately {distance_text} away "
+                f"and will take around {duration_text} {mode_label}."
             )
 
         except Exception as e:
             self.logger.error(f"❌ Distance calculation failed: {e}")
-            return "An error occurred while calculating the distance. Please try again."
+            return "An error occurred while calculating the route. Please try again."

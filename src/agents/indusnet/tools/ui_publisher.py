@@ -59,7 +59,7 @@ class UIPublisherToolsMixin:
         # This runs in the background to ensure the voice response isn't delayed
         asyncio.create_task(
             self._publish_ui_stream(
-                user_input, self.db_results, agent_response, self.user_id
+                user_input, self.db_results, agent_response, self.user_id,
             )
         )
         return "UI stream published."
@@ -161,37 +161,54 @@ class UIPublisherToolsMixin:
         )
         return "Global presence data published."
 
+
     @function_tool
-    async def publish_nearby_offices(self, context: RunContext, offices: list[dict]):
+    async def publish_nearby_offices(self, context: RunContext, offices: list[dict]) -> str:
         """
-        Publish a list of nearby office objects to the frontend via a data packet.
-        Call this tool when the user asks for directions or nearby offices,
-        after obtaining their location.
+        Publish the Indus Net offices nearest to the user on the UI.
+
+        Pick the 1–3 closest offices from OFFICE_DATA in your system instructions
+        and pass them as the `offices` list. Each office object must be copied
+        verbatim from OFFICE_DATA (do NOT invent fields).
+
+        Always ask for the user's location before calling this tool if unknown.
+        Do NOT call this tool with an empty list or without the 'offices' argument.
+
+        Example call:
+            offices=[
+                {
+                    "id": "kolkata-sector-5",
+                    "name": "Kolkata Sector 5 (SDF Building)",
+                    "address": "4th Floor, SDF Building Saltlake Electronic Complex, Kolkata, West Bengal 700091",
+                    "lat": 22.5726,
+                    "lng": 88.4312,
+                    "image_url": "https://intglobal.com/wp-content/uploads/2025/06/image-134.webp"
+                }
+            ]
 
         Args:
-            offices: A list of nearby office objects (each with 'id', 'name', 'address', and 'image_url').
+            offices: List of 1–3 office objects copied directly from OFFICE_DATA.
+                     Must include: id, name, address, lat, lng, image_url.
         """
-        self.logger.info(f"Publishing nearby offices to UI: {offices}")
+        if not offices:
+            return "No offices provided."
+
+        self.logger.info(f"Publishing {len(offices)} nearby office(s)")
 
         payload = {
             "type": "nearby_offices",
-            "data": {
-                "offices": offices,
-            },
+            "data": {"offices": offices},
         }
 
         await self._publish_data_packet(payload, TOPIC_NEARBY_OFFICES)
         self._set_last_ui_snapshot(
             snapshot_type="nearby_offices",
             title="Nearby offices",
-            summary=f"Displayed {len(offices)} nearby office option(s).",
+            summary=f"Displayed {len(offices)} nearby Indus Net office location(s).",
             details=payload.get("data", {}),
             source_tool="publish_nearby_offices",
-            links=[
-                office.get("image_url") for office in offices if office.get("image_url")
-            ],
         )
-        return "Nearby offices published to UI."
+        return f"Published {len(offices)} nearby office(s) to the UI."
 
     @function_tool
     async def get_ui_history(self, context: RunContext) -> str:
@@ -206,7 +223,7 @@ class UIPublisherToolsMixin:
         return "\n".join(titles)
 
     async def _publish_ui_stream(
-        self, user_input: str, db_results: str, agent_response: str, user_id: str
+        self, user_input: str, db_results: str, agent_response: str, user_id: str,
     ) -> None:
         """Generate and publish UI cards, filtering out already-visible content."""
         stream_id = str(uuid.uuid4())
@@ -216,7 +233,7 @@ class UIPublisherToolsMixin:
             user_input=user_input,
             db_results=db_results,
             agent_response=agent_response,
-            user_id=user_id,  # pass user_id so Mem0 can save the batch
+            user_id=user_id,
         ):
             title = payload.get("title", "")
 

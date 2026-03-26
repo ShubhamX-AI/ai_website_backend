@@ -22,6 +22,12 @@ class SearXNGService:
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
         self.default_limit = default_limit
+        # Persistent client — reuses TCP connections across calls (avoids per-call TLS handshake)
+        self._client = httpx.AsyncClient(timeout=timeout)
+
+    async def close(self) -> None:
+        """Close the underlying HTTP client. Call on agent shutdown."""
+        await self._client.aclose()
 
     @staticmethod
     def _error_payload(message: str, query: str, source: str) -> dict[str, Any]:
@@ -38,10 +44,9 @@ class SearXNGService:
         params: dict[str, str],
         timeout: float,
     ) -> dict[str, Any]:
-        async with httpx.AsyncClient(timeout=timeout) as client:
-            response = await client.get(url, params=params)
-            response.raise_for_status()
-            return response.json()
+        response = await self._client.get(url, params=params, timeout=timeout)
+        response.raise_for_status()
+        return response.json()
 
     async def search_info(
         self,
@@ -125,6 +130,128 @@ class SearXNGService:
                 break
 
         return urls
+
+    async def search_map(
+        self,
+        query: str,
+        limit: int = 3,
+        timeout: float = DEFAULT_TIMEOUT,
+    ) -> list[dict[str, Any]]:
+        """Search for places by name -> [{title, address, lat, lng, url}]"""
+        q = query.strip()
+        if not q:
+            return []
+
+        try:
+            data = await self._get_json(
+                f"{self.base_url}/search",
+                {"q": q, "format": "json", "categories": "map"},
+                timeout or self.timeout,
+            )
+        except (httpx.HTTPError, ValueError):
+            return []
+
+        results = []
+        for item in data.get("results", []):
+            lat = item.get("latitude")
+            lng = item.get("longitude")
+            if lat is None or lng is None:
+                continue  # skip results without coordinates
+            addr = item.get("address") or {}
+            address_str = ", ".join(filter(None, [
+                addr.get("road", ""),
+                addr.get("city", ""),
+                addr.get("state", ""),
+                addr.get("country", ""),
+            ]))
+            results.append({
+                "title": item.get("title") or "",
+                "address": address_str,
+                "lat": float(lat),
+                "lng": float(lng),
+                "url": item.get("url") or "",
+            })
+            if len(results) >= limit:
+                break
+
+        return results
+
+    async def search_news(
+        self,
+        query: str,
+        limit: int = 5,
+        timeout: float = DEFAULT_TIMEOUT,
+    ) -> list[dict[str, Any]]:
+        """Search news articles -> [{title, url, snippet, published_date, engine}]"""
+        q = query.strip()
+        if not q:
+            return []
+
+        try:
+            data = await self._get_json(
+                f"{self.base_url}/search",
+                {"q": q, "format": "json", "categories": "news"},
+                timeout or self.timeout,
+            )
+        except (httpx.HTTPError, ValueError):
+            return []
+
+        results = []
+        for item in data.get("results", [])[:limit]:
+            results.append({
+                "title": item.get("title") or "",
+                "url": item.get("url") or "",
+                "snippet": item.get("content") or "",
+                "published_date": item.get("publishedDate") or "",
+                "engine": item.get("engine") or "",
+            })
+        return results
+
+    async def search_it(
+        self,
+        query: str,
+        limit: int = 5,
+        timeout: float = DEFAULT_TIMEOUT,
+    ) -> list[dict[str, Any]]:
+        """Search IT/tech sources (Stack Overflow, GitHub, MDN) -> [{title, url, snippet, engine}]"""
+        q = query.strip()
+        if not q:
+            return []
+
+        try:
+            data = await self._get_json(
+                f"{self.base_url}/search",
+                {"q": q, "format": "json", "categories": "it"},
+                timeout or self.timeout,
+            )
+        except (httpx.HTTPError, ValueError):
+            return []
+
+        results = []
+        for item in data.get("results", [])[:limit]:
+            results.append({
+                "title": item.get("title") or "",
+                "url": item.get("url") or "",
+                "snippet": item.get("content") or "",
+                "engine": item.get("engine") or "",
+            })
+        return results
+
+    @staticmethod
+    def preprocess_news_for_llm(results: list[dict[str, Any]], min_snippet_len: int = 40) -> str:
+        """Format news results with dates so the agent can cite 'as of [date]'."""
+        lines = []
+        for i, item in enumerate(results, 1):
+            snippet = (item.get("snippet") or "").strip()
+            if len(snippet) < min_snippet_len:
+                continue
+            if len(snippet) > 400:
+                snippet = snippet[:400].rsplit(" ", 1)[0] + "..."
+            title = item.get("title") or ""
+            date = item.get("published_date") or ""
+            date_tag = f" ({date[:10]})" if date else ""  # keep only YYYY-MM-DD
+            lines.append(f"[{i}] {title}{date_tag}\n    {snippet}")
+        return "\n\n".join(lines) if lines else "No news found."
 
     @staticmethod
     def preprocess_for_llm(search_result: dict[str, Any], min_snippet_len: int = 40) -> str:

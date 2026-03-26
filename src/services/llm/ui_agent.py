@@ -136,7 +136,7 @@ class UIAgentFunctions:
                                     try:
                                         card_obj = json.loads(raw_json)
                                         payload = await self._normalize_card_payload(
-                                            card_obj
+                                            card_obj,
                                         )
                                         if payload:
                                             generated_cards.append(payload)
@@ -262,7 +262,10 @@ class UIAgentFunctions:
         except Exception as e:
             self.logger.error("Mem0 save failed: %s", e)
 
-    async def _normalize_card_payload(self, card_obj: dict) -> dict | None:
+    async def _normalize_card_payload(
+        self,
+        card_obj: dict,
+    ) -> dict | None:
         if not isinstance(card_obj, dict):
             return None
 
@@ -278,10 +281,11 @@ class UIAgentFunctions:
 
             asset_key = media_data.get("asset_key")
             if asset_key and asset_key in MEDIA_ASSETS:
+                # Curated asset — always use it
                 asset_info = MEDIA_ASSETS[asset_key]
                 resolved_media["urls"] = asset_info.get("urls", [])
             else:
-                # Resolve fallback images via SearXNG image search
+                # Per-card image search
                 search_query = media_data.get("query", "")
                 if search_query:
                     try:
