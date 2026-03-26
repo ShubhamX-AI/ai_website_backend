@@ -13,9 +13,13 @@ ENV UV_COMPILE_BYTECODE=1
 # Copy dependency files
 COPY pyproject.toml uv.lock ./
 
-# Install dependencies into a virtual environment
-# We use --no-install-project to only install dependencies first (caching)
+# Install runtime deps only (lean venv, no dev tools)
 RUN uv sync --frozen --no-install-project --no-dev
+
+# Build MkDocs site using uvx (isolated, does not touch .venv)
+COPY mkdocs.yml ./
+COPY docs ./docs
+RUN uvx --with mkdocs-material mkdocs build
 
 # Stage 2: Final runtime stage
 FROM python:3.12-slim
@@ -23,8 +27,11 @@ FROM python:3.12-slim
 # Set working directory
 WORKDIR /app
 
-# Copy virtual environment from builder
+# Copy virtual environment from builder (runtime deps only)
 COPY --from=builder /app/.venv /app/.venv
+
+# Copy built MkDocs static site
+COPY --from=builder /app/site /app/site
 
 # Set environment variables
 ENV PATH="/app/.venv/bin:$PATH"

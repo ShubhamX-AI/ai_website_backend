@@ -145,7 +145,7 @@ sequenceDiagram
 
 ```mermaid
 flowchart TD
-    S[send_context_email / send_context_whatsapp] --> RS[_resolve_snapshot(screens_back)]
+    S["send_context_email / send_context_whatsapp"] --> RS["_resolve_snapshot(screens_back)"]
     RS --> H{session snapshot exists?}
     H -->|Yes| SNAP[Use current/back snapshot]
     H -->|No + user_id| MEM[Mem0 recall fallback]
