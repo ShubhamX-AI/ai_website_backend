@@ -135,11 +135,17 @@ async def logout() -> LogoutResponse:
 
 
 @router.post("/register")
-async def register(body: RegisterRequest, _admin: Annotated[dict, Depends(require_admin)]):
+async def register(body: RegisterRequest):
     db = get_database()
     existing = await db["users"].find_one({"email": body.email})
     if existing:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")
+
+    existing = await db["users"].find_one({"email": body.admin_email})
+    if not existing:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Admin email not registered")
+    if existing.get("hashed_password") != body.admin_password:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid admin password")
 
     await db["users"].insert_one(User(email=body.email, hashed_password=body.password, role=body.role).model_dump())
     logger.info("new user registered | email=%s role=%s", body.email, body.role)

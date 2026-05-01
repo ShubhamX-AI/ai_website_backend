@@ -9,6 +9,8 @@ class LoginRequest(BaseModel):
 
 
 class RegisterRequest(BaseModel):
+    admin_email: EmailStr
+    admin_password: str
     email: EmailStr
     password: str
     role: Literal["admin", "client"] = "client"
