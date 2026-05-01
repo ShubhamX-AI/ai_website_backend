@@ -9,6 +9,7 @@ It runs two processes:
 
 - Runs a realtime voice agent (`indusnet`) using LiveKit Agents.
 - Uses OpenAI realtime for conversation and Cartesia for TTS.
+- **Auth system** with email/password login, Google OAuth, role-based access (admin/client), and client access windows.
 - Provides tool-driven flows for:
   - Knowledge base search (ChromaDB)
   - Internet search and image search (SearXNG)
@@ -30,6 +31,7 @@ It runs two processes:
 ## Architecture Docs
 
 - [Architecture Overview](docs/architecture.md)
+- [Auth System](docs/auth.md)
 - [Feature Data Flows](docs/data-flows.md)
 - [Tools Reference](docs/tools.md)
 
@@ -40,6 +42,7 @@ It runs two processes:
 ├── README.md
 ├── docs/
 │   ├── architecture.md
+│   ├── auth.md
 │   ├── data-flows.md
 │   └── tools.md
 ├── pyproject.toml
@@ -52,11 +55,18 @@ It runs two processes:
 │       ├── office-ambience_48k.wav
 │       └── typing-sound_48k.wav
 └── src/
+    ├── auth/
+    │   ├── jwt.py              # JWT create/verify
+    │   └── dependencies.py     # get_current_user, require_admin FastAPI deps
     ├── api/
     │   ├── main.py
+    │   ├── models/
+    │   │   ├── user.py         # User Pydantic model
+    │   │   └── schemas.py      # Auth request/response schemas
     │   └── routes/
     │       ├── health.py
-    │       └── token.py
+    │       ├── token.py
+    │       └── auth.py         # /auth/login, /auth/google, /auth/google/callback
     ├── agents/
     │   ├── base.py
     │   ├── session.py
@@ -86,6 +96,7 @@ It runs two processes:
     │           └── endcall.py
     ├── core/
     │   ├── config.py
+    │   ├── database.py         # Motor async MongoDB client
     │   └── logger.py
     └── services/
         ├── livekit/
@@ -119,6 +130,7 @@ It runs two processes:
 
 - Python `>=3.12`
 - `uv` (recommended) or `pip`
+- MongoDB instance (local or Atlas)
 - LiveKit server credentials
 - OpenAI API key
 - Cartesia API key
@@ -135,6 +147,30 @@ LIVEKIT_API_SECRET=...
 LIVEKIT_URL=wss://...
 OPENAI_API_KEY=...
 CARTESIA_API_KEY=...
+```
+
+### Required for auth
+
+```env
+# MongoDB
+MONGODB_URL=mongodb://localhost:27017
+MONGODB_DB_NAME=ai_website
+
+# JWT signing key — generate with: openssl rand -hex 32
+SECRET_KEY=...
+
+# Google OAuth (register at console.cloud.google.com)
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+GOOGLE_REDIRECT_URI=http://localhost:8000/auth/google/callback
+NEXTJS_CALLBACK_URL=http://localhost:3000/api/auth/google/callback
+
+# Domain whose Google accounts become admin (e.g. yourcompany.com)
+ADMIN_DOMAIN=yourcompany.com
+
+# Session / access window durations (hours)
+CLIENT_SESSION_HOURS=4
+CLIENT_ACCESS_WINDOW_HOURS=4
 ```
 
 ### Required for specific tools/features
@@ -164,9 +200,6 @@ GOOGLE_API_KEY=...
 PORT=8000
 EMAIL_SUMMARY_MODEL=gpt-4o-mini
 ```
-
-Note:
-- `DATABASE_URL` may exist in local `.env`, but this repo currently does not use it in runtime code.
 
 ## Installation
 
@@ -245,6 +278,27 @@ GET /health
 
 Response: plain text `ok`
 
+### Auth
+
+```http
+POST /auth/login
+# Body: { "email": "...", "password": "..." }
+# 200 → { token, role, expires_at }
+# 401 → wrong credentials
+# 403 → client access window expired
+
+GET /auth/google
+# Redirects browser to Google consent screen
+
+GET /auth/google/callback
+# Google redirects here with ?code=... → FastAPI issues JWT → redirects to Next.js
+
+POST /auth/logout
+# Returns { "success": true }
+```
+
+See [Auth System docs](docs/auth.md) for full flow, roles, and frontend integration guide.
+
 ### LiveKit token
 
 ```http
@@ -294,6 +348,9 @@ Returns: JWT token as plain text.
 ## Notes and Operational Caveats
 
 - CORS is currently configured as open (`*`) in `src/api/main.py`; tighten for production.
+- MongoDB `users` collection index on `email` (unique) is created automatically on startup via `init_db()`.
+- No user registration endpoint — create users manually or via seed script. See [Auth System docs](docs/auth.md).
+- `SECRET_KEY` must be set in production. Generate with `openssl rand -hex 32`.
 - SearXNG defaults to `http://127.0.0.1:8090`; used for both web search and flashcard image search. Ensure a reachable instance in your environment.
 - Vector stores are persisted locally under `src/services/vectordb/chroma_db*`.
 - Startup script self-healing depends on `uv` being available in your shell PATH.

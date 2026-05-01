@@ -41,5 +41,25 @@ class Settings:
     # SearXNG config
     SEARXNG_BASE_URL = os.getenv("SEARXNG_BASE_URL", "http://13.126.71.22:4000/")
 
+    # MongoDB
+    MONGODB_URL: str = os.getenv("MONGODB_URL", "mongodb://localhost:27017")
+    MONGODB_DB_NAME: str = os.getenv("MONGODB_DB_NAME", "ai_website")
+
+    # Auth / JWT
+    SECRET_KEY: str = os.getenv("SECRET_KEY", "")
+    CLIENT_SESSION_HOURS: int = int(os.getenv("CLIENT_SESSION_HOURS", "4"))
+    CLIENT_ACCESS_WINDOW_HOURS: int = int(os.getenv("CLIENT_ACCESS_WINDOW_HOURS", "4"))
+
+    # Google OAuth
+    GOOGLE_CLIENT_ID: str = os.getenv("GOOGLE_CLIENT_ID", "")
+    GOOGLE_CLIENT_SECRET: str = os.getenv("GOOGLE_CLIENT_SECRET", "")
+    GOOGLE_REDIRECT_URI: str = os.getenv("GOOGLE_REDIRECT_URI", "http://localhost:8000/auth/google/callback")
+
+    # Next.js callback URL (FastAPI redirects here after Google OAuth)
+    NEXTJS_CALLBACK_URL: str = os.getenv("NEXTJS_CALLBACK_URL", "http://localhost:3000/api/auth/google/callback")
+
+    # Google OAuth domain → admin (e.g. "yourcompany.com")
+    ADMIN_DOMAIN: str = os.getenv("ADMIN_DOMAIN", "intglobal.com")
+
 
 settings = Settings()

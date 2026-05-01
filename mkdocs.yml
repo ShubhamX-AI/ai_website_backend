@@ -23,6 +23,7 @@ theme:
 nav:
   - Home: index.md
   - Architecture: architecture.md
+  - Auth System: auth.md
   - Data Flows: data-flows.md
   - Tools Reference: tools.md
 

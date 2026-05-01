@@ -24,6 +24,7 @@ The two runtime processes — FastAPI API server and LiveKit Agent Worker — ru
 | Section | What you'll find |
 |---|---|
 | [Architecture](architecture.md) | System context diagram, bootstrap sequence, runtime interaction loop, data packet bus contracts |
+| [Auth System](auth.md) | Login flows, roles, client access window, endpoints, MongoDB schema, frontend checklist |
 | [Data Flows](data-flows.md) | End-to-end Mermaid sequence diagrams for all 9 feature flows |
 | [Tools Reference](tools.md) | Tool catalog, preconditions/postconditions, topic contracts, failure modes |
 
