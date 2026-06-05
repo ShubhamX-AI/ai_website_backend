@@ -5,6 +5,48 @@ It runs two processes:
 - A FastAPI service for health checks and LiveKit token issuance.
 - A LiveKit agent worker for real-time voice conversations and tool execution.
 
+## Quick Start
+
+Five steps to a running stack. Both processes must be up.
+
+```bash
+# 1. Clone + install
+git clone <repo-url> && cd ai_website_backend
+uv sync
+source .venv/bin/activate
+
+# 2. Create .env from template, then fill in values
+cp .env.example .env
+#    Minimum to boot: LIVEKIT_*, OPENAI_API_KEY, CARTESIA_API_KEY, MONGODB_URL, SECRET_KEY
+#    Generate SECRET_KEY: openssl rand -hex 32
+#    Every var is grouped + annotated [REQUIRED]/[DEFAULT]/[FEATURE] in .env.example
+
+# 3. Seed an admin user (MongoDB must be reachable)
+python scripts/create_admin.py
+
+# 4. Start API server  (terminal 1)
+python -m src.api.main          # dev, http://localhost:8000
+
+# 5. Start agent worker (terminal 2)
+python -m src.agents.session dev
+```
+
+Or run both backgrounded: `bash run_both.sh`. Docker: `docker compose up --build`.
+
+Health check: `curl http://localhost:8000/health` → `ok`.
+
+Minimum env to boot (core runtime + auth):
+
+| Var | Why |
+|---|---|
+| `LIVEKIT_API_KEY` / `LIVEKIT_API_SECRET` / `LIVEKIT_URL` | Room creation, JWT, agent dispatch |
+| `OPENAI_API_KEY` | Realtime LLM + transcription + embeddings |
+| `CARTESIA_API_KEY` | TTS |
+| `MONGODB_URL` / `MONGODB_DB_NAME` | User store, auth |
+| `SECRET_KEY` | JWT signing |
+
+Tool features (search, email, WhatsApp, maps) need extra env — see [Required for specific tools/features](#required-for-specific-toolsfeatures). Missing those vars degrades only that tool, not boot.
+
 ## What This Project Does
 
 - Runs a realtime voice agent (`indusnet`) using LiveKit Agents.
@@ -30,6 +72,10 @@ It runs two processes:
 
 ## Architecture Docs
 
+Full docs site builds with `mkdocs build` and serves at `/documentation`.
+
+- [Docs Home](docs/index.md)
+- [Feature List](docs/features.md)
 - [Architecture Overview](docs/architecture.md)
 - [Auth System](docs/auth.md)
 - [Feature Data Flows](docs/data-flows.md)
@@ -40,6 +86,7 @@ It runs two processes:
 ```text
 .
 ├── README.md
+├── .env.example               # annotated env template — copy to .env
 ├── docs/
 │   ├── architecture.md
 │   ├── auth.md
@@ -61,12 +108,12 @@ It runs two processes:
     ├── api/
     │   ├── main.py
     │   ├── models/
-    │   │   ├── user.py         # User Pydantic model
-    │   │   └── schemas.py      # Auth request/response schemas
+    │   │   ├── api_schemas.py  # Auth request/response Pydantic schemas
+    │   │   └── db_schemas.py   # User DB model
     │   └── routes/
     │       ├── health.py
     │       ├── token.py
-    │       └── auth.py         # /auth/login, /auth/google, /auth/google/callback
+    │       └── auth.py         # /auth/login, /auth/register, /auth/google, /auth/google/callback, /auth/logout
     ├── agents/
     │   ├── base.py
     │   ├── session.py
@@ -137,7 +184,18 @@ It runs two processes:
 
 ## Environment Variables
 
-Create `.env` in project root.
+Copy the annotated template and fill it in:
+
+```bash
+cp .env.example .env
+```
+
+`.env.example` lists **every** variable the code reads (from `src/core/config.py`), grouped and tagged:
+- `[REQUIRED]` — no usable default; must set
+- `[DEFAULT]` — has a working default; override only if needed
+- `[FEATURE]` — only needed for that tool; missing it disables only that feature, not boot
+
+The sections below mirror the template.
 
 ### Required for core runtime
 
@@ -295,6 +353,13 @@ GET /auth/google/callback
 
 POST /auth/logout
 # Returns { "success": true }
+
+POST /auth/register
+# Body: { "admin_email": "...", "admin_password": "...", "email": "...", "password": "...", "role": "client" }
+# Creates a new user. Gated by an existing admin's credentials (admin_email + admin_password).
+# role defaults to "client"; accepts "admin" | "client".
+# 200 → { "success": true, "message": "Registration successful." }
+# 400 → email already registered / admin not found / invalid admin password
 ```
 
 See [Auth System docs](docs/auth.md) for full flow, roles, and frontend integration guide.
@@ -349,9 +414,9 @@ Returns: JWT token as plain text.
 
 - CORS is currently configured as open (`*`) in `src/api/main.py`; tighten for production.
 - MongoDB `users` collection index on `email` (unique) is created automatically on startup via `init_db()`.
-- No user registration endpoint — create users manually or via seed script. See [Auth System docs](docs/auth.md).
+- First admin: seed via `scripts/create_admin.py` (no admin exists yet to authorize `/auth/register`). After that, create more users through `POST /auth/register` (requires existing admin credentials) or insert directly into MongoDB. See [Auth System docs](docs/auth.md).
 - `SECRET_KEY` must be set in production. Generate with `openssl rand -hex 32`.
-- SearXNG defaults to `http://127.0.0.1:8090`; used for both web search and flashcard image search. Ensure a reachable instance in your environment.
+- `SEARXNG_BASE_URL` falls back to a hosted default (`http://13.126.71.22:4000/`) if unset; used for both web search and flashcard image search. Point it at your own reachable instance (e.g. `http://127.0.0.1:8090`).
 - Vector stores are persisted locally under `src/services/vectordb/chroma_db*`.
 - Startup script self-healing depends on `uv` being available in your shell PATH.
 - Logs are written to `logs/app.log` via rotating file handler.

@@ -145,9 +145,38 @@ Collection: `users`
 
 ---
 
-## Creating Users Manually
+## Creating Users
 
-No register endpoint. Insert directly into MongoDB:
+### First admin (seed)
+
+No admin exists yet to authorize registration, so bootstrap the first admin with the seed script:
+
+```bash
+python scripts/create_admin.py
+```
+
+### Via the register endpoint
+
+Once an admin exists, create more users with `POST /auth/register`. The call is gated by an existing admin's credentials:
+
+```http
+POST /auth/register
+Content-Type: application/json
+
+{
+  "admin_email": "admin@yourcompany.com",
+  "admin_password": "<existing admin password>",
+  "email": "newuser@example.com",
+  "password": "<new user password>",
+  "role": "client"
+}
+```
+
+`role` defaults to `"client"`; accepts `"admin" | "client"`. Returns `400` if the email is already registered, the admin is not found, or the admin password is wrong.
+
+### Manually (direct insert)
+
+Or insert directly into MongoDB:
 
 ```python
 from passlib.hash import bcrypt
@@ -177,6 +206,8 @@ db.users.insertOne({
 ---
 
 ## Environment Variables
+
+Copy the root template and fill it in — `cp .env.example .env`. It lists every variable the code reads, tagged `[REQUIRED]`/`[DEFAULT]`/`[FEATURE]`. The auth-relevant subset:
 
 ```env
 SECRET_KEY=<openssl rand -hex 32>

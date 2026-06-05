@@ -12,7 +12,7 @@ A visitor to a website can start a voice conversation directly in the browser. T
 
 1. Issues a LiveKit room token via a FastAPI endpoint so the browser can join a room.
 2. Spawns a voice agent in the room that listens and responds using OpenAI's realtime LLM.
-3. Executes **12 specialized tools** based on conversation intent — searching the knowledge base, rendering interactive UI cards, collecting form submissions, booking meetings, sharing directions, and delivering summaries by email or WhatsApp.
+3. Executes **19 specialized tools** based on conversation intent — searching the knowledge base, rendering interactive UI cards, collecting form submissions, booking meetings, sharing directions, and delivering summaries by email or WhatsApp.
 4. Publishes structured data packets over LiveKit's data channel so the frontend can render UI components in sync with the voice response.
 
 The two runtime processes — FastAPI API server and LiveKit Agent Worker — run independently and can be deployed as separate Docker containers.
@@ -30,12 +30,26 @@ The two runtime processes — FastAPI API server and LiveKit Agent Worker — ru
 
 ---
 
+## Local Setup
+
+```bash
+uv sync && source .venv/bin/activate
+cp .env.example .env          # fill in credentials
+python scripts/create_admin.py  # seed first admin
+python -m src.api.main          # terminal 1 — API
+python -m src.agents.session dev  # terminal 2 — agent worker
+```
+
+`.env.example` (project root) is the annotated source of truth for every environment variable — core runtime, auth, Google SSO, and per-tool feature keys — each tagged `[REQUIRED]`, `[DEFAULT]`, or `[FEATURE]`. See the project `README.md` Quick Start and Environment Variables sections for the full walkthrough.
+
+---
+
 ## Runtime Stack
 
 | Layer | Technology |
 |---|---|
 | Voice transport | LiveKit (WebRTC rooms + data channel) |
-| Conversation LLM | OpenAI Realtime (`gpt-4o-realtime`) |
+| Conversation LLM | OpenAI Realtime (`gpt-realtime`) |
 | Transcription | OpenAI (`gpt-4o-mini-transcribe`) |
 | Text-to-speech | Cartesia (`sonic-3`) |
 | Knowledge retrieval | ChromaDB vector store + `text-embedding-3-small` |
