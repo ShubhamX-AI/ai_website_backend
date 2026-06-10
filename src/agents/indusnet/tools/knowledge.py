@@ -41,12 +41,20 @@ class KnowledgeToolsMixin:
         enriched_q = _enrich_query(question)
         self.logger.info(f"Searching internet for: {enriched_q} (raw: {question})")
 
-        general, news, it_results = await asyncio.gather(
-            self.search_service.search_info(enriched_q),
-            self.search_service.search_news(enriched_q),
-            self.search_service.search_it(enriched_q),
-            return_exceptions=True,
-        )
+        try:
+            general, news, it_results = await asyncio.wait_for(
+                asyncio.gather(
+                    self.search_service.search_info(enriched_q),
+                    self.search_service.search_news(enriched_q),
+                    self.search_service.search_it(enriched_q),
+                    return_exceptions=True,
+                ),
+                timeout=12.0,
+            )
+        except asyncio.TimeoutError:
+            # Don't block the turn waiting on a slow SearXNG
+            self.logger.error("❌ Internet search timed out")
+            return "Internet search timed out — no results available."
 
         # Build merged, deduplicated text for the LLM
         sections: list[str] = []

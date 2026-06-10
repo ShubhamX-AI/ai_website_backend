@@ -239,31 +239,60 @@ class UIPublisherToolsMixin:
     async def _publish_ui_stream(
         self, user_input: str, db_results: str, agent_response: str, user_id: str,
     ) -> None:
-        """Generate and publish UI cards, filtering out already-visible content."""
+        """Generate and publish UI cards, filtering out already-visible content.
+
+        Always ships at least one card + an end-of-stream marker, even if card
+        generation errors or yields nothing — so the agent's "I'm showing you
+        the details" promise is never broken and the frontend never hangs.
+        """
         stream_id = str(uuid.uuid4())
         card_index = 0
 
-        async for payload in self.ui_agent_functions.query_process_stream(
-            user_input=user_input,
-            db_results=db_results,
-            agent_response=agent_response,
-            user_id=user_id,
-        ):
-            title = payload.get("title", "")
+        try:
+            async for payload in self.ui_agent_functions.query_process_stream(
+                user_input=user_input,
+                db_results=db_results,
+                agent_response=agent_response,
+                user_id=user_id,
+            ):
+                # The generator signals failure with an error payload — don't
+                # publish it as a card; fall through to the fallback below.
+                if payload.get("type") == "error":
+                    self.logger.error("UI stream generator error: %s", payload.get("content"))
+                    continue
 
-            # Inject grouping info
-            payload["stream_id"] = stream_id
-            payload["card_index"] = card_index
+                title = payload.get("title", "")
 
-            if await self._publish_data_packet(payload, TOPIC_UI_FLASHCARD):
-                self.logger.info(
-                    "✅ Data packet sent successfully: %s (Stream: %s, Index: %s)",
-                    title,
-                    stream_id,
-                    card_index,
-                )
+                # Inject grouping info
+                payload["stream_id"] = stream_id
+                payload["card_index"] = card_index
 
-            card_index += 1
+                if await self._publish_data_packet(payload, TOPIC_UI_FLASHCARD):
+                    self.logger.info(
+                        "✅ Data packet sent successfully: %s (Stream: %s, Index: %s)",
+                        title,
+                        stream_id,
+                        card_index,
+                    )
+
+                card_index += 1
+        except Exception as e:
+            self.logger.error("❌ UI stream generation failed: %s", e)
+
+        # Fallback: if nothing was produced, ship one card built from the spoken
+        # response so the user always sees the details the agent promised.
+        if card_index == 0 and agent_response:
+            fallback = {
+                "type": "flashcard",
+                "title": "Summary",
+                "value": agent_response,
+                "stream_id": stream_id,
+                "card_index": 0,
+                "fallback": True,
+            }
+            if await self._publish_data_packet(fallback, TOPIC_UI_FLASHCARD):
+                card_index = 1
+                self.logger.info("⚠️ Published fallback flashcard from spoken response")
 
         # Send end-of-stream marker
         end_of_stream_payload = {

@@ -1,4 +1,3 @@
-import asyncio
 import json
 
 from livekit import rtc
@@ -38,12 +37,14 @@ class DataHandlerMixin:
 
             user_info = context_payload.get("user_info", {})
             self.user_id = user_info.get("user_id")
-            self.user_name = user_info.get("user_name")
-            self.user_email = user_info.get("user_email")
-            self.user_phone = user_info.get("user_phone")
+            # Disabled: do NOT personalize from the user.context packet — the agent
+            # must not know the user's name/email/phone, even for returning users.
+            # self.user_name = user_info.get("user_name")
+            # self.user_email = user_info.get("user_email")
+            # self.user_phone = user_info.get("user_phone")
 
-            if self.user_name and self.user_name.lower() != "guest":
-                asyncio.create_task(self._update_instructions())
+            # if self.user_name and self.user_name.lower() != "guest":
+            #     asyncio.create_task(self._update_instructions())
 
             return False
 
