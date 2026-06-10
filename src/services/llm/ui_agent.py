@@ -2,6 +2,7 @@
 UI Agent for generating flashcard content using OpenAI and Mem0.
 """
 
+import asyncio
 import json
 import logging
 import re
@@ -94,6 +95,7 @@ class UIAgentFunctions:
                 response_format={"type": "json_object"},
                 stream=True,
                 temperature=0.5,
+                timeout=20.0,  # don't hang the card stream on a stalled API call
             )
 
             generated_cards: list[dict] = []
@@ -289,9 +291,13 @@ class UIAgentFunctions:
                 search_query = media_data.get("query", "")
                 if search_query:
                     try:
-                        image_urls = await self.search_service.search_images(search_query)
+                        image_urls = await asyncio.wait_for(
+                            self.search_service.search_images(search_query),
+                            timeout=6.0,
+                        )
                         resolved_media["urls"] = image_urls
-                    except Exception:
+                    except (asyncio.TimeoutError, Exception):
+                        # A slow image search must not stall the whole card
                         resolved_media["urls"] = []
                 else:
                     resolved_media["urls"] = []

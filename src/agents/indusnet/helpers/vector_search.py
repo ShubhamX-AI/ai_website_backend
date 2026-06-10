@@ -1,7 +1,11 @@
+import asyncio
 import json
 from typing import Optional
 
 from src.agents.indusnet.constants import SKIPPED_METADATA_KEYS
+
+# Hard cap on a single vector-store query so a ChromaDB stall never freezes a turn
+_VECTOR_SEARCH_TIMEOUT = 8.0
 
 
 class VectorSearchHelperMixin:
@@ -50,7 +54,17 @@ class VectorSearchHelperMixin:
 
     async def _vector_db_search(self, query: str) -> str:
         """Search the vector database for relevant information."""
-        results = await self.vector_store.search(query, k=self.db_fetch_size)
+        try:
+            results = await asyncio.wait_for(
+                self.vector_store.search(query, k=self.db_fetch_size),
+                timeout=_VECTOR_SEARCH_TIMEOUT,
+            )
+        except (asyncio.TimeoutError, Exception) as e:
+            # Never let a slow/locked store halt the turn — return empty so the
+            # agent can fall back to internet search or answer from its own knowledge.
+            self.logger.error(f"❌ Vector DB search failed/timed out: {e}")
+            self.db_results = ""
+            return self.db_results
 
         formatted_results = []
         for i, doc in enumerate(results):
