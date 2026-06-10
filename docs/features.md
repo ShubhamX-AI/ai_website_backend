@@ -8,7 +8,7 @@ Complete capability inventory for the Indus Net AI Website Backend.
 
 - Browser visitor speaks directly into the website — no app install, no form fill.
 - OpenAI Realtime LLM (`gpt-realtime`) drives the conversation with semantic VAD turn detection.
-- Cartesia TTS (`sonic-3`) synthesises speech at 1.1× speed with a fixed voice profile.
+- Sarvam AI TTS (`bulbul:v3`, speaker `ishita`) synthesises speech with a fixed Indian-English voice profile.
 - Realtime transcription via `gpt-4o-mini-transcribe` — exact speech-to-text with a fallback prompt.
 - Noise cancellation (`livekit-plugins-noise-cancellation`) applied to incoming audio.
 - Background ambient audio (office ambience + typing sound) plays during agent thinking time.

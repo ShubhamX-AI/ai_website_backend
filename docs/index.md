@@ -1,6 +1,6 @@
 # AGUI Backend
 
-Real-time voice agent backend architecture for AI-powered website assistants. Built on [LiveKit Agents](https://docs.livekit.io/agents/) with OpenAI Realtime and Cartesia TTS.
+Real-time voice agent backend architecture for AI-powered website assistants. Built on [LiveKit Agents](https://docs.livekit.io/agents/) with OpenAI Realtime and Sarvam AI TTS.
 
 The `indusnet` agent is the reference implementation of this architecture, deployed for **Indus Net Technologies**.
 
@@ -51,7 +51,7 @@ python -m src.agents.session dev  # terminal 2 — agent worker
 | Voice transport | LiveKit (WebRTC rooms + data channel) |
 | Conversation LLM | OpenAI Realtime (`gpt-realtime`) |
 | Transcription | OpenAI (`gpt-4o-mini-transcribe`) |
-| Text-to-speech | Cartesia (`sonic-3`) |
+| Text-to-speech | Sarvam AI (`bulbul:v3`, speaker `ishita`) |
 | Knowledge retrieval | ChromaDB vector store + `text-embedding-3-small` |
 | Web / image search | SearXNG (self-hosted) |
 | UI card generation | OpenAI (`gpt-4o-mini`) |

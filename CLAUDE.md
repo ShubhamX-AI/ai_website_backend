@@ -45,7 +45,7 @@ Two processes run independently and must both be up for the system to work:
 1. Frontend calls `GET /api/getToken` → FastAPI creates a LiveKit room, dispatches the `indusnet` agent, returns JWT.
 2. Frontend joins room with JWT.
 3. LiveKit dispatches a job to the agent worker → `entrypoint()` in `session.py` runs.
-4. `AgentSession` uses OpenAI Realtime (LLM + transcription) + Cartesia TTS (sonic-3).
+4. `AgentSession` uses OpenAI Realtime (LLM + transcription) + Sarvam TTS (bulbul:v3, speaker ishita).
 5. `IndusNetAgent` handles conversation, calls tool functions, publishes data packets to frontend via LiveKit data channels.
 
 `session.py` also wires three background behaviors via session event handlers (not obvious from the agent class): contextual **filler phrases** generated while the user is speaking, a **silence watchdog**, and looped **background audio** (office ambience + typing) mixed under the agent. Idle timeout ends the call.
@@ -98,7 +98,7 @@ No user registration endpoint — use `scripts/create_admin.py` or insert direct
 All config in `src/core/config.py` via `settings` singleton. All values read from `.env` via `python-dotenv`. Key groups:
 - LiveKit: `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`, `LIVEKIT_URL`
 - OpenAI: `OPENAI_API_KEY`
-- Cartesia: `CARTESIA_API_KEY`
+- Sarvam AI: `SARVAM_API_KEY`
 - MongoDB: `MONGODB_URL`, `MONGODB_DB_NAME`
 - Auth: `SECRET_KEY`, `ADMIN_DOMAIN`, `CLIENT_SESSION_HOURS`, `CLIENT_ACCESS_WINDOW_HOURS`
 - Google OAuth: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`, `NEXTJS_CALLBACK_URL`

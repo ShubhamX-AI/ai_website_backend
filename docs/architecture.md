@@ -12,7 +12,7 @@ flowchart LR
     AG[Agent Worker\n`src/agents/session.py`]
 
     OAI[OpenAI Realtime\nLLM + Transcription]
-    CTS[Cartesia TTS]
+    STS[Sarvam TTS]
     CH[(ChromaDB\ncompany_knowledge + ui_flashcard_memory)]
     SX[SearXNG]
     GM[Google Maps APIs]
@@ -27,7 +27,7 @@ flowchart LR
     AG <--> |Audio/Text + Data Packets| LK
 
     AG --> OAI
-    AG --> CTS
+    AG --> STS
     AG --> CH
     AG --> SX
     AG --> GM

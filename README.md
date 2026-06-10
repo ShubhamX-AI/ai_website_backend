@@ -17,7 +17,7 @@ source .venv/bin/activate
 
 # 2. Create .env from template, then fill in values
 cp .env.example .env
-#    Minimum to boot: LIVEKIT_*, OPENAI_API_KEY, CARTESIA_API_KEY, MONGODB_URL, SECRET_KEY
+#    Minimum to boot: LIVEKIT_*, OPENAI_API_KEY, SARVAM_API_KEY, MONGODB_URL, SECRET_KEY
 #    Generate SECRET_KEY: openssl rand -hex 32
 #    Every var is grouped + annotated [REQUIRED]/[DEFAULT]/[FEATURE] in .env.example
 
@@ -41,7 +41,7 @@ Minimum env to boot (core runtime + auth):
 |---|---|
 | `LIVEKIT_API_KEY` / `LIVEKIT_API_SECRET` / `LIVEKIT_URL` | Room creation, JWT, agent dispatch |
 | `OPENAI_API_KEY` | Realtime LLM + transcription + embeddings |
-| `CARTESIA_API_KEY` | TTS |
+| `SARVAM_API_KEY` | TTS |
 | `MONGODB_URL` / `MONGODB_DB_NAME` | User store, auth |
 | `SECRET_KEY` | JWT signing |
 
@@ -50,7 +50,7 @@ Tool features (search, email, WhatsApp, maps) need extra env — see [Required f
 ## What This Project Does
 
 - Runs a realtime voice agent (`indusnet`) using LiveKit Agents.
-- Uses OpenAI realtime for conversation and Cartesia for TTS.
+- Uses OpenAI realtime for conversation and Sarvam AI for TTS.
 - **Auth system** with email/password login, Google OAuth, role-based access (admin/client), and client access windows.
 - Provides tool-driven flows for:
   - Knowledge base search (ChromaDB)
@@ -180,7 +180,7 @@ Full docs site builds with `mkdocs build` and serves at `/documentation`.
 - MongoDB instance (local or Atlas)
 - LiveKit server credentials
 - OpenAI API key
-- Cartesia API key
+- Sarvam AI API key
 
 ## Environment Variables
 
@@ -204,7 +204,7 @@ LIVEKIT_API_KEY=...
 LIVEKIT_API_SECRET=...
 LIVEKIT_URL=wss://...
 OPENAI_API_KEY=...
-CARTESIA_API_KEY=...
+SARVAM_API_KEY=...
 ```
 
 ### Required for auth
@@ -407,7 +407,7 @@ Returns: JWT token as plain text.
 - Realtime transcription: `gpt-4o-mini-transcribe`
 - UI flashcard generation: `gpt-4o-mini`
 - Filler phrase generation: `gpt-4o-mini`
-- TTS: Cartesia `sonic-3`
+- TTS: Sarvam AI `bulbul:v3` (speaker `ishita`)
 - Embeddings: `text-embedding-3-small`
 
 ## Notes and Operational Caveats
