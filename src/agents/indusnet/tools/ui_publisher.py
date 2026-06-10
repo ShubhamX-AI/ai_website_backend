@@ -3,12 +3,24 @@ import re
 import uuid
 
 from livekit.agents import function_tool, RunContext
+from pydantic import BaseModel
 
 from src.agents.indusnet.constants import (
     TOPIC_UI_FLASHCARD,
     TOPIC_GLOBAL_PRESENCE,
     TOPIC_NEARBY_OFFICES,
 )
+
+
+class Office(BaseModel):
+    """A single Indus Net office location, copied verbatim from OFFICE_DATA."""
+
+    id: str
+    name: str
+    address: str
+    lat: float
+    lng: float
+    image_url: str
 
 
 class UIPublisherToolsMixin:
@@ -163,7 +175,7 @@ class UIPublisherToolsMixin:
 
 
     @function_tool
-    async def publish_nearby_offices(self, context: RunContext, offices: list[dict]) -> str:
+    async def publish_nearby_offices(self, context: RunContext, offices: list[Office]) -> str:
         """
         Publish the Indus Net offices nearest to the user on the UI.
 
@@ -195,9 +207,11 @@ class UIPublisherToolsMixin:
 
         self.logger.info(f"Publishing {len(offices)} nearby office(s)")
 
+        # Serialize Pydantic models to plain dicts for the frontend data packet
+        office_dicts = [office.model_dump() for office in offices]
         payload = {
             "type": "nearby_offices",
-            "data": {"offices": offices},
+            "data": {"offices": office_dicts},
         }
 
         await self._publish_data_packet(payload, TOPIC_NEARBY_OFFICES)
