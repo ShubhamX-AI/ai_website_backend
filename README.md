@@ -40,8 +40,8 @@ Minimum env to boot (core runtime + auth):
 | Var | Why |
 |---|---|
 | `LIVEKIT_API_KEY` / `LIVEKIT_API_SECRET` / `LIVEKIT_URL` | Room creation, JWT, agent dispatch |
-| `OPENAI_API_KEY` | Realtime LLM + transcription + embeddings |
-| `SARVAM_API_KEY` | TTS |
+| `OPENAI_API_KEY` | Conversation LLM (gpt-4.1) + embeddings |
+| `SARVAM_API_KEY` | STT + TTS |
 | `MONGODB_URL` / `MONGODB_DB_NAME` | User store, auth |
 | `SECRET_KEY` | JWT signing |
 
@@ -50,7 +50,7 @@ Tool features (search, email, WhatsApp, maps) need extra env — see [Required f
 ## What This Project Does
 
 - Runs a realtime voice agent (`indusnet`) using LiveKit Agents.
-- Uses OpenAI realtime for conversation and Sarvam AI for TTS.
+- Uses a Sarvam STT → OpenAI GPT-4.1 → Sarvam TTS pipeline for conversation.
 - **Auth system** with email/password login, Google OAuth, role-based access (admin/client), and client access windows.
 - Provides tool-driven flows for:
   - Knowledge base search (ChromaDB)
@@ -403,11 +403,14 @@ Returns: JWT token as plain text.
 
 ## Model Usage (Current)
 
-- Conversation LLM: `gpt-realtime`
-- Realtime transcription: `gpt-4o-mini-transcribe`
+Voice runs as an STT → LLM → TTS pipeline (not the OpenAI Realtime model):
+
+- STT: Sarvam AI `saaras:v3` (transcribe mode)
+- Conversation LLM: OpenAI `gpt-4.1`
+- TTS: Sarvam AI `bulbul:v3` (speaker `simran`)
+- Turn detection: LiveKit `MultilingualModel` + Silero VAD
 - UI flashcard generation: `gpt-4o-mini`
 - Filler phrase generation: `gpt-4o-mini`
-- TTS: Sarvam AI `bulbul:v3` (speaker `ishita`)
 - Embeddings: `text-embedding-3-small`
 
 ## Notes and Operational Caveats

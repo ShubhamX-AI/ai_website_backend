@@ -30,7 +30,7 @@ async def generate_filler(context: list[dict]) -> str | None:
         context_block = ""
 
     try:
-        # Isolated client — never touches the agent's realtime session
+        # Isolated client — never touches the agent's LLM session
         _client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
         
         response = await _client.chat.completions.create(

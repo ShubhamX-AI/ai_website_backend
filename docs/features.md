@@ -7,10 +7,10 @@ Complete capability inventory for the Indus Net AI Website Backend.
 ## 1. Real-Time Voice Conversation
 
 - Browser visitor speaks directly into the website — no app install, no form fill.
-- OpenAI Realtime LLM (`gpt-realtime`) drives the conversation with semantic VAD turn detection.
-- Sarvam AI TTS (`bulbul:v3`, speaker `ishita`) synthesises speech with a fixed Indian-English voice profile.
-- Realtime transcription via `gpt-4o-mini-transcribe` — exact speech-to-text with a fallback prompt.
-- Noise cancellation (`livekit-plugins-noise-cancellation`) applied to incoming audio.
+- Sarvam AI STT (`saaras:v3`, transcribe mode) converts speech to text.
+- OpenAI `gpt-4.1` drives the conversation; turn detection via `MultilingualModel` + Silero VAD.
+- Sarvam AI TTS (`bulbul:v3`, speaker `simran`) synthesises speech with a fixed Indian-English voice profile.
+- Noise cancellation (`livekit-plugins-noise-cancellation`) available as an optional room input filter.
 - Background ambient audio (office ambience + typing sound) plays during agent thinking time.
 - `preemptive_generation=True` — agent starts generating before TTS output finishes.
 

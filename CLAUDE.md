@@ -45,7 +45,7 @@ Two processes run independently and must both be up for the system to work:
 1. Frontend calls `GET /api/getToken` → FastAPI creates a LiveKit room, dispatches the `indusnet` agent, returns JWT.
 2. Frontend joins room with JWT.
 3. LiveKit dispatches a job to the agent worker → `entrypoint()` in `session.py` runs.
-4. `AgentSession` uses OpenAI Realtime (LLM + transcription) + Sarvam TTS (bulbul:v3, speaker ishita).
+4. `AgentSession` runs an STT→LLM→TTS pipeline: Sarvam STT (saaras:v3, transcribe) → OpenAI `gpt-4.1` → Sarvam TTS (bulbul:v3, speaker simran). Turn detection via `MultilingualModel` + Silero VAD (loaded in `prewarm`).
 5. `IndusNetAgent` handles conversation, calls tool functions, publishes data packets to frontend via LiveKit data channels.
 
 `session.py` also wires three background behaviors via session event handlers (not obvious from the agent class): contextual **filler phrases** generated while the user is speaking, a **silence watchdog**, and looped **background audio** (office ambience + typing) mixed under the agent. Idle timeout ends the call.

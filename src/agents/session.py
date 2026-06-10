@@ -3,7 +3,6 @@ import logging
 import asyncio
 import os
 import random
-from typing import cast
 from livekit import rtc
 from livekit.agents import (
     WorkerOptions,
@@ -14,10 +13,8 @@ from livekit.agents import (
     AudioConfig,
     room_io,
 )
-from livekit.plugins import sarvam
-from livekit.plugins.openai import realtime
-from openai.types.realtime import AudioTranscription
-from openai.types.beta.realtime.session import TurnDetection
+from livekit.plugins import sarvam, silero, openai
+from livekit.plugins.turn_detector.multilingual import MultilingualModel
 
 from src.core.config import settings
 from src.core.logger import setup_logging
@@ -31,30 +28,37 @@ from src.agents.indusnet.helpers.silence import (
 setup_logging()
 logger = logging.getLogger(__name__)
 
+
+def prewarm(proc):
+    """Load Silero VAD once per worker process and reuse across jobs."""
+    proc.userdata["vad"] = silero.VAD.load()
+
+
 async def entrypoint(ctx: JobContext):
     session = AgentSession(
-        llm=realtime.RealtimeModel(
-            model="gpt-realtime",
-            input_audio_transcription=AudioTranscription(
-                model="gpt-4o-mini-transcribe",
-                prompt="Transcribe exactly what is spoken. If not understood ask the user to please repeat",
-            ),
-            input_audio_noise_reduction="near_field",
-            turn_detection=TurnDetection(
-                type="semantic_vad",
-                eagerness="high",
-                create_response=True,
-                interrupt_response=True,
-            ),
-            modalities=["text"],
-            api_key=cast(str, settings.OPENAI_API_KEY),
+        # Speech-to-text: Sarvam saaras:v3, transcribe mode keeps original spoken language
+        stt=sarvam.STT(
+            model="saaras:v3",
+            mode="transcribe",
+            api_key=settings.SARVAM_API_KEY,
         ),
+        # LLM: OpenAI GPT-4.1 over Chat Completions
+        llm=openai.LLM(
+            model="gpt-4.1",
+            api_key=settings.OPENAI_API_KEY,
+            temperature=0.2,
+        ),
+        # Text-to-speech: Sarvam bulbul:v3
         tts=sarvam.TTS(
             model="bulbul:v3",
-            speaker="ishita",
+            speaker="simran",
+            target_language_code="en-IN",
             api_key=settings.SARVAM_API_KEY,
             pace=1.0,
         ),
+        # Silence detection + semantic end-of-utterance turn detection
+        vad=ctx.proc.userdata["vad"],
+        turn_detection=MultilingualModel(),
         preemptive_generation=True,
         use_tts_aligned_transcript=True,
     )
@@ -195,5 +199,6 @@ if __name__ == "__main__":
             job_memory_warn_mb=1024,
             agent_name="indusnet",
             entrypoint_fnc=entrypoint,
+            prewarm_fnc=prewarm,
         )
     )

@@ -11,8 +11,9 @@ flowchart LR
     LK[(LiveKit Server\nRooms + Agent Dispatch)]
     AG[Agent Worker\n`src/agents/session.py`]
 
-    OAI[OpenAI Realtime\nLLM + Transcription]
-    STS[Sarvam TTS]
+    SST[Sarvam STT\n`saaras:v3`]
+    OAI[OpenAI LLM\n`gpt-4.1`]
+    STS[Sarvam TTS\n`bulbul:v3`]
     CH[(ChromaDB\ncompany_knowledge + ui_flashcard_memory)]
     SX[SearXNG]
     GM[Google Maps APIs]
@@ -26,6 +27,7 @@ flowchart LR
     LK -->|Dispatch `indusnet` job| AG
     AG <--> |Audio/Text + Data Packets| LK
 
+    AG --> SST
     AG --> OAI
     AG --> STS
     AG --> CH

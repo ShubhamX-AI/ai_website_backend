@@ -1,6 +1,6 @@
 # AGUI Backend
 
-Real-time voice agent backend architecture for AI-powered website assistants. Built on [LiveKit Agents](https://docs.livekit.io/agents/) with OpenAI Realtime and Sarvam AI TTS.
+Real-time voice agent backend architecture for AI-powered website assistants. Built on [LiveKit Agents](https://docs.livekit.io/agents/) with a Sarvam STT → OpenAI GPT-4.1 → Sarvam TTS pipeline.
 
 The `indusnet` agent is the reference implementation of this architecture, deployed for **Indus Net Technologies**.
 
@@ -11,7 +11,7 @@ The `indusnet` agent is the reference implementation of this architecture, deplo
 A visitor to a website can start a voice conversation directly in the browser. This backend handles everything behind that interaction:
 
 1. Issues a LiveKit room token via a FastAPI endpoint so the browser can join a room.
-2. Spawns a voice agent in the room that listens and responds using OpenAI's realtime LLM.
+2. Spawns a voice agent in the room that transcribes speech (Sarvam STT), reasons with OpenAI GPT-4.1, and replies via Sarvam TTS.
 3. Executes **19 specialized tools** based on conversation intent — searching the knowledge base, rendering interactive UI cards, collecting form submissions, booking meetings, sharing directions, and delivering summaries by email or WhatsApp.
 4. Publishes structured data packets over LiveKit's data channel so the frontend can render UI components in sync with the voice response.
 
@@ -49,9 +49,10 @@ python -m src.agents.session dev  # terminal 2 — agent worker
 | Layer | Technology |
 |---|---|
 | Voice transport | LiveKit (WebRTC rooms + data channel) |
-| Conversation LLM | OpenAI Realtime (`gpt-realtime`) |
-| Transcription | OpenAI (`gpt-4o-mini-transcribe`) |
-| Text-to-speech | Sarvam AI (`bulbul:v3`, speaker `ishita`) |
+| Speech-to-text | Sarvam AI (`saaras:v3`, transcribe mode) |
+| Conversation LLM | OpenAI (`gpt-4.1`) |
+| Text-to-speech | Sarvam AI (`bulbul:v3`, speaker `simran`) |
+| Turn detection | LiveKit `MultilingualModel` + Silero VAD |
 | Knowledge retrieval | ChromaDB vector store + `text-embedding-3-small` |
 | Web / image search | SearXNG (self-hosted) |
 | UI card generation | OpenAI (`gpt-4o-mini`) |
