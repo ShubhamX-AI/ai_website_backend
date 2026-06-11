@@ -45,11 +45,7 @@ STT_PROMPT = (
     "A caller is talking to the voice assistant of Indus Net Technologies "
     "(INT), an IT services and software company in Kolkata, India. The caller "
     "speaks English, Hindi, or Bengali and often mixes them (Hinglish, "
-    "Banglish). Recognize and preserve these terms accurately: Indus Net "
-    "Technologies, INT, Abhishek Rungta; software development, web development, "
-    "mobile app development, AI, machine learning, cloud, DevOps, fintech, "
-    "ecommerce, digital marketing, SEO, UI UX design, data analytics, staff "
-    "augmentation; Kolkata, Salt Lake, Sector 5, Newtown."
+    "Banglish). Recognize and preserve these terms accurately."
 )
 
 
@@ -65,14 +61,14 @@ async def entrypoint(ctx: JobContext):
             # Noise rejection (saaras:v3 VAD) — reject faint/short background audio
             # so ambient room noise is not transcribed. Tune against real recordings.
             high_vad_sensitivity=False,
-            positive_speech_threshold=0.8,
+            positive_speech_threshold=0.6,
             negative_speech_threshold=0.35,
-            min_speech_frames=10,
-            first_turn_min_speech_frames=4,
-            num_initial_ignored_frames=10,
-            negative_frames_count=8,
-            negative_frames_window=10,
-            start_speech_volume_threshold=0.3,
+            min_speech_frames=8,
+            # first_turn_min_speech_frames=4,
+            num_initial_ignored_frames=4,
+            # negative_frames_count=4,
+            # negative_frames_window=3,
+            # start_speech_volume_threshold=0.05,
         ),
         # LLM: OpenAI GPT-4.1 over Chat Completions
         llm=openai.LLM(
