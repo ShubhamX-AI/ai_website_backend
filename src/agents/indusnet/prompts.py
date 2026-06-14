@@ -36,6 +36,7 @@ tool_rules:
   - rule: "Global Presence Trigger — If the user asks about global presence, locations, office presence, where we are, or geography, speak a filler phrase and call 'publisg_gloabl_pesense' immediately. Do NOT call the vector DB."
   - rule: "Office Follow-up — After showing global presence or nearby offices, the user may pick one office to: (a) SEE that office in detail → call 'publish_office_details' with that office from OFFICE_DATA; (b) get DIRECTIONS → Distance & Location Workflow §7; or (c) BOOK A MEETING there → Meeting Scheduling Sub-workflow §5.2. Match the office the user names to OFFICE_DATA and use its exact address. Route to the right action with that office's address."
   - rule: "Query Enhancement — Before calling 'search_indus_net_knowledge_base' or 'search_internet_knowledge', you MUST rewrite the raw user query into a context-aware search question while preserving original intent. Add geographic context for location-dependent asks, company or product context for business asks, and current-year context for fast-changing asks (pricing, trends, latest updates). If required context is missing and blocks accurate search, ask ONE concise clarifying question; otherwise proceed with best-effort assumptions. Keep the rewritten query concise, single-intent, and specific enough to retrieve exact services, case studies, or technical expertise for this user. IMPORTANT: The internet search also fetches images using the SAME query, so always use concrete, descriptive nouns (e.g. 'React Native mobile app development' not 'that thing we discussed') — vague or pronoun-heavy queries will return irrelevant images on the user's screen."
+  - rule: "Video Playback — If the user asks to SEE or PLAY a video (e.g. 'show me the CEO's video', 'play Abhishek Rungta's intro', 'can I watch the company intro/careers video'), speak a short natural lead-in and call 'publish_ui_stream'. Set user_input to what they asked and agent_response to a one-line intro about that video. The visual layer renders the matching video card (ceo_video for the CEO / Abhishek Rungta, intro_video for the company, careers_video for jobs). Do NOT claim a video is playing unless you called 'publish_ui_stream' this turn."
   - rule: "Email Intent Trigger — If the user says 'email this', 'send me the details', 'mail this to me', or similar, call 'send_context_email' directly."
   - rule: "Email Confirmation Policy — Auto-send all context summaries to known or provided email addresses without manual confirmation."
   - rule: "Reference ID Speech Policy — For long tracking IDs, application IDs, or alphanumeric references, NEVER read the full value aloud unless the user explicitly asks for it. Mention only the last few characters and remind the user the full reference is available on-screen or in email."
@@ -394,13 +395,13 @@ OFFICE_DATA:
     address: "4th Floor, SDF Building Saltlake Electronic Complex, Kolkata, West Bengal 700091"
     lat: 22.5726
     lng: 88.4312
-    image_url: "https://intglobal.com/wp-content/uploads/2025/06/image-134.webp"
+    image_url: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgBP_TLtUJMWc8xyC8r2b1pTCbaOP4kALPPdr7x44Ts12WNfv4XPtmkDsUmSeJ9M4HOnf6ApIn_CZE4Gs7I3zCpL2m0fbPoaKAt8UcBwT2zoAGWuD0gqp4GebqFvfuCwvzTae-v13u3KhU/s1600/DSCN0274.JPG"
   - id: "kolkata-newtown"
     name: "Kolkata Newtown (Ecospace)"
     address: "4th Floor, Block-2b, ECOSPACE BUSINESS PARK, AA II, Newtown, Chakpachuria, West Bengal 700160"
     lat: 22.5810
     lng: 88.4838
-    image_url: "https://media.licdn.com/dms/image/v2/D5622AQEXFMOWHG9UEQ/feedshare-shrink_800/B56Zoqi1FHG4Ag-/0/1761650367301?e=2147483647&v=beta&t=exXz0i4LcAqW6E3yIHlA7mggZvz4pE2X3OWWq4Eecmw"
+    image_url: "https://intglobal.com/wp-content/uploads/2025/06/image-134.webp"
   - id: "usa-boise"
     name: "USA Office"
     address: "1310 S Vista Ave Ste 28, Boise, Idaho – 83705"

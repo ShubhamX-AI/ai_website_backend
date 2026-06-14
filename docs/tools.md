@@ -12,6 +12,7 @@ Tool contract guide for `src/agents/indusnet/tools/*`.
 | `recall_and_republish_ui_content` | Replay prior cards from memory | `agent_response` | Mem0 read; publishes recalled cards + end marker | Success/fallback string |
 | `publish_global_presence` | Show global locations | optional `user_input` | Publishes `ui.global_presense`; stores snapshot | Confirmation string |
 | `publish_nearby_offices` | Show nearby office cards | `offices` list | Publishes `ui.nearby_offices`; stores snapshot | Confirmation string |
+| `publish_office_details` | Show ONE specific office in detail (with image) | `office` object | Publishes `ui.office_details`; stores snapshot | Confirmation string |
 | `get_ui_history` | Show server-side UI history | none | none | newline list string |
 | `preview_contact_form` | Review contact details | `user_name`, `user_email`, `user_phone`, `contact_details` | Publishes `ui.contact_form`; stores snapshot | Prompt-for-confirmation string |
 | `submit_contact_form` | Final contact submit | same as preview | Sends receipt email; publishes submit packet; stores snapshot | Success/fallback string |
@@ -47,6 +48,7 @@ Tool contract guide for `src/agents/indusnet/tools/*`.
 | `ui.location_request` | `request_user_location`, `calculate_distance_to_destination` | `location_request`, `map.polyline` |
 | `ui.global_presense` | `publish_global_presence` | `global_presence` |
 | `ui.nearby_offices` | `publish_nearby_offices` | `nearby_offices` |
+| `ui.office_details` | `publish_office_details` | `office_details` |
 | `ui.email_delivery` | `send_context_email` | `context_email_delivery` |
 | `ui.whatsapp_delivery` | `send_context_whatsapp` | `context_whatsapp_delivery` |
 | `user.details` | `get_user_info` | user identity object |

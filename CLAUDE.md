@@ -71,7 +71,7 @@ All tool functions decorated with `@function_tool` are auto-registered by LiveKi
 Agent ↔ frontend communicate via LiveKit room data packets (not HTTP). Two directions:
 
 - **Frontend → Agent** (listened via `ctx.room.on("data_received")`): topics `user.context`, `user.location`, `ui.context`
-- **Agent → Frontend** (published via `PacketHelperMixin`): topics `ui.flashcard`, `ui.contact_form`, `ui.job_application`, `ui.meeting_form`, `ui.location_request`, `ui.global_presense`, `ui.nearby_offices`, `ui.email_delivery`, `ui.whatsapp_delivery`, `user.details`
+- **Agent → Frontend** (published via `PacketHelperMixin`): topics `ui.flashcard`, `ui.contact_form`, `ui.job_application`, `ui.meeting_form`, `ui.location_request`, `ui.global_presense`, `ui.nearby_offices`, `ui.office_details`, `ui.email_delivery`, `ui.whatsapp_delivery`, `user.details`
 
 See `docs/architecture.md` for the full packet contract table.
 
@@ -107,6 +107,7 @@ All config in `src/core/config.py` via `settings` singleton. All values read fro
 - Auth: `SECRET_KEY`, `ADMIN_DOMAIN`, `CLIENT_SESSION_HOURS`, `CLIENT_ACCESS_WINDOW_HOURS`
 - Google OAuth: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`, `NEXTJS_CALLBACK_URL`
 - Email (SMTP): `SENDER_EMAIL`, `SENDER_PASSWORD`, `SMTP_SERVER` (default `smtp.gmail.com`), `SMTP_PORT` (default `587`), `EMAIL_SUMMARY_MODEL` (default `gpt-4o-mini`)
+- Flashcards: `FLASHCARD_MODEL` (default `gpt-5.1-mini`) — model for streaming JSON flashcard emission in `ui_agent.py`; must support `response_format=json_object`, `stream`, `temperature`
 - WhatsApp: `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_TEMPLATE_NAME`
 - Other: `SEARXNG_BASE_URL`, `GOOGLE_API_KEY` (maps), `PORT` (default `8000`)
 

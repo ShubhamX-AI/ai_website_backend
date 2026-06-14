@@ -160,7 +160,9 @@ PRIORITY 1 — ASSET MAP (Always check this first):
   SEMANTIC BINDING RULES (apply these mappings automatically):
   - Card about CEO / Abhishek Rungta          → Use asset_key "ceo_abhishek_rungta" or "ceo_video"
   - Card about the company / intro / about us  → Use asset_key "intro_video"
-  - Card about Kolkata office / HQ             → Use asset_key "kolkata_office"
+  - Card about Kolkata Newtown / Ecospace office → Use asset_key "kolkata_newtown_office"
+  - Card about Kolkata Sector 5 / SDF office    → Use asset_key "kolkata_sector5_office"
+  - Card about Kolkata office / HQ (unspecified) → Use asset_key "kolkata_office"
   - Card about any office / building           → Use asset_key "indus_office"
   - Card about Digital Engineering / dev       → Use asset_key "digital_engineering"
   - Card about AI / Analytics / ML             → Use asset_key "ai_analytics"
@@ -282,6 +284,8 @@ EMPTY STATE:
 ### IMAGES
 - indus_office
 - kolkata_office
+- kolkata_newtown_office
+- kolkata_sector5_office
 - ceo_abhishek_rungta
 - abhishek_rungta_sign
 - testimonial_malcolm

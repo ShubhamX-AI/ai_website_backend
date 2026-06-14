@@ -80,6 +80,7 @@ Complete capability inventory for the Indus Net AI Website Backend.
 
 - `publish_nearby_offices` accepts an office list and renders nearby-office cards over `ui.nearby_offices`.
 - Used in conjunction with location data to show contextually relevant offices.
+- `publish_office_details` renders ONE specific office in detail (with image) over `ui.office_details` — used when the user picks or names a single office.
 
 ---
 
@@ -208,7 +209,7 @@ Two login methods, two roles:
 
 All UI updates flow through LiveKit data channel topics — no HTTP polling.
 
-**Agent → Frontend topics:** `ui.flashcard`, `ui.contact_form`, `ui.job_application`, `ui.meeting_form`, `ui.location_request`, `ui.global_presense`, `ui.nearby_offices`, `ui.email_delivery`, `ui.whatsapp_delivery`, `user.details`
+**Agent → Frontend topics:** `ui.flashcard`, `ui.contact_form`, `ui.job_application`, `ui.meeting_form`, `ui.location_request`, `ui.global_presense`, `ui.nearby_offices`, `ui.office_details`, `ui.email_delivery`, `ui.whatsapp_delivery`, `user.details`
 
 **Frontend → Agent topics:** `user.context`, `user.location`, `ui.context`
 
