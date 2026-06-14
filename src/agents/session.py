@@ -93,6 +93,25 @@ async def entrypoint(ctx: JobContext):
         turn_detection=MultilingualModel(),
         preemptive_generation=True,
         use_tts_aligned_transcript=True,
+        # ── Turn-taking + barge-in tuning (self-hosted; no Krisp BVC) ──────────
+        # Barge-in must be FAST: when the user speaks over the agent it should stop
+        # almost immediately. With min_interruption_words > 0 the agent keeps talking
+        # until Sarvam STT transcribes a word — that STT lag was the 1–3s delay. So
+        # interruption is voice-activity driven (min_interruption_words=0): the agent
+        # PAUSES the instant VAD hears speech. Noise tolerance comes from the
+        # pause→auto-resume model, not a word gate — resume_false_interruption=True
+        # means a pause that yields no real speech resumes after false_interruption_timeout.
+        allow_interruptions=True,            # keep barge-in (user can cut in)
+        min_interruption_words=0,            # interrupt on voice activity, not on a transcribed word → instant stop
+        min_interruption_duration=0.3,       # min VAD speech length before pausing; false pauses auto-resume
+        resume_false_interruption=True,      # if a pause yields no speech (noise), resume the agent
+        false_interruption_timeout=0.7,      # silence window after a pause to classify it as false → resume
+        discard_audio_if_uninterruptible=True,  # drop audio captured while agent can't be interrupted
+        # Endpointing: bound the semantic turn detector. Slightly larger min delay
+        # so a brief mid-sentence pause (common in Hinglish/Banglish) doesn't end
+        # the user's turn prematurely; cap the wait at 3s.
+        min_endpointing_delay=0.3,
+        max_endpointing_delay=0.6,
     )
 
     # Background audio
