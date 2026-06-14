@@ -257,6 +257,7 @@ GOOGLE_API_KEY=...
 ```env
 PORT=8000
 EMAIL_SUMMARY_MODEL=gpt-4o-mini
+FLASHCARD_MODEL=gpt-5.1-mini
 ```
 
 ## Installation
@@ -387,6 +388,7 @@ Returns: JWT token as plain text.
 - `recall_and_republish_ui_content(agent_response)`
 - `publish_global_presence(user_input="global presence")`
 - `publish_nearby_offices(offices)`
+- `publish_office_details(office)`
 - `get_ui_history()`
 - `get_user_info(user_name, user_email="", user_phone="")`
 - `preview_contact_form(...)`

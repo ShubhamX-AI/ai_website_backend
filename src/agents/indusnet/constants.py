@@ -9,6 +9,7 @@ TOPIC_USER_LOCATION = "user.location"  # frontend → backend: GPS result
 TOPIC_UI_LOCATION_REQUEST = "ui.location_request"  # backend → frontend: request GPS
 TOPIC_GLOBAL_PRESENCE = "ui.global_presense"
 TOPIC_NEARBY_OFFICES = "ui.nearby_offices"
+TOPIC_OFFICE_DETAILS = "ui.office_details"  # backend → frontend: one specific office
 TOPIC_JOB_APPLICATION = "ui.job_application"
 TOPIC_MEETING_FORM = "ui.meeting_form"
 TOPIC_EMAIL_DELIVERY = "ui.email_delivery"

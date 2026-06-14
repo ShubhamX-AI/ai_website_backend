@@ -21,7 +21,7 @@ from src.services.search.searxng_svc import SearXNGService
 class UIAgentFunctions:
     def __init__(self):
         self.openai_client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-        self.llm_model = "gpt-4o-mini"
+        self.llm_model = settings.FLASHCARD_MODEL
         self.logger = logging.getLogger(__name__)
         self.instructions = UI_SYSTEM_INSTRUCTION
         self.search_service = SearXNGService()

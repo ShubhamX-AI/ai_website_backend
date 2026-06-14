@@ -13,6 +13,10 @@ class Settings:
     # OpenAI
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
     EMAIL_SUMMARY_MODEL = os.getenv("EMAIL_SUMMARY_MODEL", "gpt-4o-mini")
+    # Model for flashcard emission (streaming JSON). Override via env to try a
+    # newer mini, e.g. FLASHCARD_MODEL=gpt-5.1-mini. NOTE: if the chosen model
+    # rejects custom temperature or json_object mode, revert to gpt-4o-mini.
+    FLASHCARD_MODEL = os.getenv("FLASHCARD_MODEL", "gpt-4o-mini")
 
     # SARVAM
     SARVAM_API_KEY = os.getenv("SARVAM_API_KEY")

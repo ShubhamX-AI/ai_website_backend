@@ -80,6 +80,7 @@ The agent selects tools automatically based on conversation context. All tools l
     | `recall_and_republish_ui_content` | Replays previously shown cards from Mem0 memory |
     | `publish_global_presence` | Renders a global office location panel |
     | `publish_nearby_offices` | Renders nearby office cards based on user location |
+    | `publish_office_details` | Renders one specific office in detail (with image) over `ui.office_details` |
     | `get_ui_history` | Returns a server-side log of what has been shown |
 
 ??? info "Forms and Scheduling"
@@ -127,6 +128,6 @@ See [Architecture → Bootstrap Sequence](architecture.md#bootstrap-sequence) fo
 
 All real-time UI updates flow through LiveKit's data channel, not HTTP. The agent publishes to named topics; the frontend subscribes and renders components accordingly.
 
-**Frontend-subscribed topics:** `ui.flashcard`, `ui.contact_form`, `ui.job_application`, `ui.meeting_form`, `ui.location_request`, `ui.global_presense`, `ui.nearby_offices`, `ui.email_delivery`, `ui.whatsapp_delivery`
+**Frontend-subscribed topics:** `ui.flashcard`, `ui.contact_form`, `ui.job_application`, `ui.meeting_form`, `ui.location_request`, `ui.global_presense`, `ui.nearby_offices`, `ui.office_details`, `ui.email_delivery`, `ui.whatsapp_delivery`
 
 See [Architecture → Packet Bus Contracts](architecture.md#packet-bus-contracts) for the full topic and payload reference.

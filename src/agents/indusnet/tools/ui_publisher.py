@@ -9,6 +9,7 @@ from src.agents.indusnet.constants import (
     TOPIC_UI_FLASHCARD,
     TOPIC_GLOBAL_PRESENCE,
     TOPIC_NEARBY_OFFICES,
+    TOPIC_OFFICE_DETAILS,
 )
 
 
@@ -24,7 +25,7 @@ class Office(BaseModel):
 
 
 class UIPublisherToolsMixin:
-    """Tools for publishing UI content (flashcards, global presence, nearby offices) to the frontend."""
+    """Tools for publishing UI content (flashcards, global presence, nearby offices, office details) to the frontend."""
 
     def _build_knowledge_email_context(
         self,
@@ -223,6 +224,44 @@ class UIPublisherToolsMixin:
             source_tool="publish_nearby_offices",
         )
         return f"Published {len(offices)} nearby office(s) to the UI."
+
+    @function_tool
+    async def publish_office_details(self, context: RunContext, office: Office) -> str:
+        """
+        Publish ONE specific Indus Net office in detail on the user's screen.
+
+        Use this when the user wants to SEE a particular office (e.g. "show me
+        the Newtown office", "tell me about the Singapore office", or after they
+        pick one from the nearby-offices or global-presence view). Pass the
+        single office object copied verbatim from OFFICE_DATA — id, name,
+        address, lat, lng, image_url.
+
+        For 1–3 closest offices use 'publish_nearby_offices' instead. This tool
+        is for a single, specific office.
+
+        IMPORTANT: Calling this tool REPLACES everything currently on the
+        user's screen.
+
+        Args:
+            office: One office object copied directly from OFFICE_DATA.
+                    Must include: id, name, address, lat, lng, image_url.
+        """
+        self.logger.info("Publishing office details for: %s", office.name)
+
+        payload = {
+            "type": "office_details",
+            "data": {"office": office.model_dump()},
+        }
+
+        await self._publish_data_packet(payload, TOPIC_OFFICE_DETAILS)
+        self._set_last_ui_snapshot(
+            snapshot_type="office_details",
+            title=f"Office: {office.name}",
+            summary=f"Displayed details for {office.name} ({office.address}).",
+            details=payload.get("data", {}),
+            source_tool="publish_office_details",
+        )
+        return f"Published details for {office.name} to the UI."
 
     @function_tool
     async def get_ui_history(self, context: RunContext) -> str:

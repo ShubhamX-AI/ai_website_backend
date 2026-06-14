@@ -117,6 +117,7 @@ sequenceDiagram
 | `ui.location_request` | `location_request`, `map.polyline` |
 | `ui.global_presense` | `global_presence` |
 | `ui.nearby_offices` | `nearby_offices` |
+| `ui.office_details` | `office_details` |
 | `ui.email_delivery` | `context_email_delivery` |
 | `ui.whatsapp_delivery` | `context_whatsapp_delivery` |
 | `user.details` | user identity echo from `get_user_info` |
