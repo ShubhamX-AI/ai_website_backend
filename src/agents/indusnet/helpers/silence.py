@@ -53,17 +53,18 @@ class SilenceWatchdogController:
             self._waiting_for_user_response = True
             self._reprompt_count = 0
             self._cancel_watchdog_task()
-            self._start_watchdog_task()
             return
 
         self._clear_waiting_state()
 
     def on_user_state_changed(self, is_speaking: bool) -> None:
-        """Pauses watchdog while user speaks and resumes when they stop."""
+        """Cancel watchdog while user speaks. Do not restart — wait for agent to finish speaking."""
         self._user_is_speaking = is_speaking
         if is_speaking:
             self._cancel_watchdog_task()
-            return
+
+    def on_agent_finished_speaking(self) -> None:
+        """Start watchdog after agent finishes TTS, if waiting for user response."""
         self._start_watchdog_task()
 
     def _assistant_expects_reply(self, message_text: str) -> bool:
