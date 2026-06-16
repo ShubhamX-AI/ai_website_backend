@@ -34,9 +34,6 @@ MEDIA_ASSETS: Dict[str, Dict[str, Any]] = {
     "customer_experience": {
         "urls": ["https://www.gosurvey.in/media/a0vmcbf1/customer-experience-is-important-for-businesses.jpg"],
     },
-    "digital_engineering": {
-        "urls": ["https://cdn.prod.website-files.com/6040a6f3bbe5b060a4c21ac5/66fd0df74a3e6a47084d11fe_66fd0df2d5e733b54c3dd828_unnamed%2520(8).jpeg"],
-    },
     "ai_analytics": {
         "urls": ["https://www.gooddata.com/img/blog/_1200x630/what-is-ai-analytics_cover.png.webp"],
     },

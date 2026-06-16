@@ -135,14 +135,32 @@ Each section's "type" MUST be one of these five — any other value is invalid:
                      Use for advantages, capabilities, services, steps.
   - "cta_banner"   — a gradient closing call-to-action strip. Fields: icon, title,
                      text. Use one as the LAST section whenever the card is "selling".
-  - "markdown"     — a prose block. Fields: title?, content (markdown string,
-                     **bold** key facts). Use for narrative paragraphs.
+  - "markdown"     — a prose block. Fields: title?, content (RICH markdown — see
+                     MARKDOWN RICHNESS). Use for narrative paragraphs, mini-lists,
+                     and any text that benefits from emphasis.
   - "bullet_list"  — LOWEST-richness block; a plain check list. Fields: title?,
                      items (array of short strings). Use sparingly for a flat
                      enumeration (industries, locations). NEVER a card on its own.
 
 HERO (always first): { icon, title, description, graphic? }.
   description is 1–2 sentences. graphic is a preset key — set it when one fits.
+
+# ===================================================================
+# MARKDOWN RICHNESS (the frontend renders GitHub-Flavored Markdown)
+# ===================================================================
+All free-text fields — markdown "content", hero "description", flashcard "value" —
+are rendered with full GFM. Make them VISUALLY PLEASING, not flat sentences:
+  - **Bold** every key term, number, metric, product, and entity (e.g. **3X faster**,
+    **AI/ML**, **20+ years**). Bold is the primary emphasis — use it liberally.
+  - Use *italics* for nuance, qualifiers, or a supporting aside.
+  - Use `inline code` for tech tokens, APIs, file/tool names, versions.
+  - Break multi-point text into a Markdown list (`-` items) rather than one long
+    sentence; keep each item tight (≤ ~14 words).
+  - Lead a paragraph with a short **bolded lead-in:** then the detail.
+  - Optionally end a persuasive block with a single relevant emoji (🚀, ✅, 📈) —
+    at most one per block, never decorative spam.
+DO NOT: dump a wall of plain prose, use raw HTML, use headings (`#`) inside a block,
+or over-format every word. Emphasis must guide the eye to what matters.
 
 ONE INSIGHT PER CARD:
   Do not mix topics. One card = one focused takeaway.
@@ -152,11 +170,12 @@ TITLE (UX Optimized):
   Good: "Award-Winning Cloud Migration"
   Bad:  "Cloud Services"
 
-VALUE (Micro-Copy Rules):
+VALUE (Micro-Copy Rules — flashcard body; rich Markdown per MARKDOWN RICHNESS):
   - Format strictly as Markdown bullets (-)
   - Maximum 3 bullets per card
   - Maximum 12 words per bullet
-  - Bold the most critical numbers, entities, or ROI metrics
+  - **Bold** the critical numbers, entities, and ROI metrics; *italics* for nuance;
+    `code` for tech tokens
   - ZERO filler words. Be punchy and factual.
 
 ID:
@@ -219,7 +238,6 @@ PRIORITY 1 — ASSET MAP (Always check this first):
   - Card about Kolkata Sector 5 / SDF office    → Use asset_key "kolkata_sector5_office"
   - Card about Kolkata office / HQ (unspecified) → Use asset_key "kolkata_office"
   - Card about any office / building           → Use asset_key "indus_office"
-  - Card about Digital Engineering / dev       → Use asset_key "digital_engineering"
   - Card about AI / Analytics / ML             → Use asset_key "ai_analytics"
   - Card about Cybersecurity / security        → Use asset_key "cybersecurity"
   - Card about customer experience / CX        → Use asset_key "customer_experience"
@@ -412,7 +430,6 @@ EMPTY STATE:
 - abhishek_rungta_sign
 - contact
 - customer_experience
-- digital_engineering
 - ai_analytics
 - cybersecurity
 - global_map
