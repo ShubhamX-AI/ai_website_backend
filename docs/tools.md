@@ -9,7 +9,7 @@ Tool contract guide for `src/agents/indusnet/tools/*`.
 | `search_indus_net_knowledge_base` | Vector DB search | `question` | Updates `self.db_results` | Markdown text results |
 | `search_internet_knowledge` | Parallel web/news/IT search via SearXNG; query is auto-enriched to remove conversational fluff | `question` | Three concurrent SearXNG calls (general, news, IT); images from same query drive frontend flashcard visuals | Sectioned snippet text (`[General]`, `[News]`, `[Tech / IT]`) or no-results string |
 | `publish_ui_stream` | Stream a dynamic-count deck (≈1-6) of image flashcards to UI; a card may be text-only where an image adds nothing | `user_input`, `agent_response` | Publishes `ui.flashcard`; stores snapshot; schedules async stream + Mem0 save | Confirmation string |
-| `publish_rich_card` | Render ONE polished text-only card (NO images) — pricing, process, explainers, partners, comparisons, general Q&A | `title`, `markdown_content`; optional `bullets`, `chips`, `visual_intent`, `icon` | Publishes `ui.rich_card`; stores snapshot | Confirmation string |
+| `publish_infographic` | Render ONE agent-authored infographic card (composed hero + typed section blocks, NO images) — pricing, process, explainers, partners, comparisons, general Q&A. Full payload schema in `docs/frontend-infographic-contract.md` | `title`, `markdown_content`; optional `bullets`, `chips`, `visual_intent`, `icon` | Publishes `ui.infographic`; stores snapshot | Confirmation string |
 | `recall_and_republish_ui_content` | Replay prior cards from memory | `agent_response` | Mem0 read; publishes recalled cards + end marker | Success/fallback string |
 | `publish_global_presence` | Show global locations | optional `user_input` | Publishes `ui.global_presense`; stores snapshot | Confirmation string |
 | `publish_nearby_offices` | Show nearby office cards | `offices` list | Publishes `ui.nearby_offices`; stores snapshot | Confirmation string |
@@ -36,10 +36,10 @@ Tool contract guide for `src/agents/indusnet/tools/*`.
 | `schedule_meeting` | User should confirm after `preview_meeting_invite` | Invite send attempted; UI status packet published on success |
 | `submit_contact_form` / `submit_job_application` | User should confirm previewed data | Submit packet sent; receipt email attempted |
 | `send_context_email` / `send_context_whatsapp` | Valid recipient + available snapshot (or Mem0 fallback) | Delivery status packet published with sent/failed |
-| `recall_and_republish_ui_content` | `user_id` should be present | Recalled **flashcards** re-emitted with `recalled=true` — does NOT replay `rich_card` cards (re-author those via `publish_rich_card`) |
-| `publish_rich_card` | Substantive answer that is NOT a `render_image_flashcards` topic and no dedicated screen tool fits | `rich_card` published; snapshot stored |
+| `recall_and_republish_ui_content` | `user_id` should be present | Recalled **flashcards** re-emitted with `recalled=true` — does NOT replay `infographic` cards (re-author those via `publish_infographic`) |
+| `publish_infographic` | Substantive answer that is NOT a `render_image_flashcards` topic and no dedicated screen tool fits | `infographic` published; snapshot stored |
 
-> **One visual per turn.** `publish_ui_stream`, `publish_rich_card`, and the dedicated screen tools are mutually exclusive — exactly one fires per turn. Routing: dedicated screen tool → else image-flashcard topic uses `publish_ui_stream` → else `publish_rich_card`. Both card types REPLACE the current screen.
+> **One visual per turn.** `publish_ui_stream`, `publish_infographic`, and the dedicated screen tools are mutually exclusive — exactly one fires per turn. Routing: dedicated screen tool → else image-flashcard topic uses `publish_ui_stream` → else `publish_infographic`. Both card types REPLACE the current screen.
 
 ## Topic Contracts by Tool
 
@@ -53,7 +53,7 @@ Tool contract guide for `src/agents/indusnet/tools/*`.
 | `ui.global_presense` | `publish_global_presence` | `global_presence` |
 | `ui.nearby_offices` | `publish_nearby_offices` | `nearby_offices` |
 | `ui.office_details` | `publish_office_details` | `office_details` |
-| `ui.rich_card` | `publish_rich_card` | `rich_card` |
+| `ui.infographic` | `publish_infographic` | `infographic` |
 | `ui.email_delivery` | `send_context_email` | `context_email_delivery` |
 | `ui.whatsapp_delivery` | `send_context_whatsapp` | `context_whatsapp_delivery` |
 | `user.details` | `get_user_info` | user identity object |

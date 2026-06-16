@@ -16,7 +16,7 @@ from src.agents.indusnet.handlers.data_handler import DataHandlerMixin
 # ── Tools ──────────────────────────────────────────────────────────────────
 from src.agents.indusnet.tools.knowledge import KnowledgeToolsMixin
 from src.agents.indusnet.tools.ui_publisher import UIPublisherToolsMixin
-from src.agents.indusnet.tools.rich_card import RichCardToolsMixin
+from src.agents.indusnet.tools.infographic_card import InfographicToolsMixin
 from src.agents.indusnet.tools.forms import FormToolsMixin
 from src.agents.indusnet.tools.location import LocationToolsMixin
 from src.agents.indusnet.tools.meeting import MeetingToolsMixin
@@ -40,7 +40,7 @@ class IndusNetAgent(
     # ── Tools (registered as @function_tool by LiveKit) ────────────
     KnowledgeToolsMixin,
     UIPublisherToolsMixin,
-    RichCardToolsMixin,
+    InfographicToolsMixin,
     FormToolsMixin,
     LocationToolsMixin,
     MeetingToolsMixin,

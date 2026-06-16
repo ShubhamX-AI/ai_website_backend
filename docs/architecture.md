@@ -110,8 +110,8 @@ sequenceDiagram
 
 | Topic | Typical payload `type` |
 |---|---|
-| `ui.flashcard` | `flashcard`, `rich_card`, `end_of_stream` |
-| `ui.rich_card` | `rich_card` |
+| `ui.flashcard` | `flashcard`, `infographic`, `end_of_stream` |
+| `ui.infographic` | `infographic` |
 | `ui.contact_form` | `contact_form`, `contact_form_submit` |
 | `ui.job_application` | `job_application_preview`, `job_application_submit` |
 | `ui.meeting_form` | `meeting_form`, `meeting_invite_submit` |

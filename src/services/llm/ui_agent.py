@@ -13,6 +13,7 @@ from mem0 import Memory
 from openai import AsyncOpenAI
 
 from src.core.config import settings
+from src.services.llm.infographic import normalize_infographic_payload
 from src.services.llm.prompts import UI_SYSTEM_INSTRUCTION
 from src.services.llm.media_assets import MEDIA_ASSETS
 from src.services.search.searxng_svc import SearXNGService
@@ -83,7 +84,7 @@ class UIAgentFunctions:
                 {db_results}
 
                 ## Your Task
-                Generate as many cards as the answer genuinely needs (typically 1 to 6) for NEW information only. Each card is either an image "flashcard" or a text-only "rich_card" — mix the two only when it genuinely helps. Check active_elements and skip any content already displayed.
+                Generate as many cards as the answer genuinely needs (typically 1 to 6) for NEW information only. Each card is either an image "flashcard" or a composed text "infographic" (hero + typed blocks) — mix the two only when it genuinely helps. Check active_elements and skip any content already displayed.
             """
 
             stream = await self.openai_client.chat.completions.create(
@@ -271,31 +272,14 @@ class UIAgentFunctions:
         if not isinstance(card_obj, dict):
             return None
 
-        # A deck card is either an image "flashcard" or a text-only "rich_card".
+        # A deck card is either an image "flashcard" or a composed text "infographic".
         card_type = card_obj.get("type") or "flashcard"
 
-        if card_type == "rich_card":
-            # Text-only card embedded in the deck — never carries media. Emits the SAME
-            # keys (with the same defaults) as the standalone publish_rich_card payload so
-            # the frontend renders both alike regardless of which topic delivered the card.
-            title = card_obj.get("title")
-            content = card_obj.get("content") or card_obj.get("value")
-            if not title or not content:
-                return None
-            rich_payload: dict[str, Any] = {
-                "type": "rich_card",
-                "title": title,
-                "content": content,
-                "bullets": card_obj.get("bullets") or [],
-                "chips": card_obj.get("chips") or [],
-                "visual_intent": card_obj.get("visual_intent")
-                or card_obj.get("intent")
-                or "neutral",
-                "icon": card_obj.get("icon") or "info",
-            }
-            if card_obj.get("id") is not None:
-                rich_payload["id"] = card_obj["id"]
-            return rich_payload
+        if card_type in ("infographic", "rich_card"):
+            # "rich_card" is the legacy alias (kept so old Mem0-recalled cards still
+            # render) — normalize it to an infographic so the frontend only ever
+            # handles two card types: image "flashcard" and text "infographic".
+            return normalize_infographic_payload(card_obj)
 
         payload: dict[str, Any] = {"type": "flashcard"}
 
