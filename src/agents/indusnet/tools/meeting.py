@@ -85,22 +85,25 @@ class MeetingToolsMixin:
     async def preview_meeting_invite(
         self,
         context: RunContext,
-        recipient_email: str,
-        subject: str,
-        description: str,
-        location: str,
-        start_time_iso: str,
+        recipient_email: str = "",
+        subject: str = "",
+        description: str = "",
+        location: str = "",
+        start_time_iso: str = "",
         duration_hours: float = 1.0,
     ):
         """
-        Send the meeting invitation data to the frontend for user review.
+        Render the meeting invitation form on the frontend for the user to see. Call this FIRST
+        to put the (possibly empty) form on screen, then re-call it with updated values as you
+        collect each field by voice so the on-screen form fills in live. All fields are
+        optional — pass whatever is known so far; blanks render as empty form fields.
 
         Args:
-            recipient_email: The email address for the invite.
-            subject: The title of the meeting.
-            description: A brief description of the meeting.
-            location: Where the meeting will happen.
-            start_time_iso: The start time in ISO 8601 format.
+            recipient_email: The email address for the invite (blank if not yet collected).
+            subject: The title of the meeting (blank if not yet collected).
+            description: A brief description of the meeting (blank if not yet collected).
+            location: Where the meeting will happen (blank if not yet collected).
+            start_time_iso: The start time in ISO 8601 format (blank if not yet collected).
             duration_hours: How long the meeting lasts in hours.
         """
         self.logger.info(
@@ -119,8 +122,8 @@ class MeetingToolsMixin:
             },
         }
 
-        # Small delay for visual effect
-        await asyncio.sleep(1.5)
+        # Brief delay for visual effect; kept short so the form appears promptly.
+        await asyncio.sleep(0.3)
         await self._publish_data_packet(payload, TOPIC_MEETING_FORM)
         self._set_last_ui_snapshot(
             snapshot_type="meeting_preview",

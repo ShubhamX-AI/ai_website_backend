@@ -95,9 +95,11 @@ Step 5 — CHOOSE EACH CARD'S TYPE & MEDIA
 # ===================================================================
 
 COUNT:
-  Generate as many cards as the answer genuinely needs — typically 1 to 6.
-  Use only as many as carry real signal; never pad to hit a number.
-  If the agent signals no data, return {"cards":[]}.
+  Default to a RICH MULTI-CARD DECK. Any substantive topic deserves 2–5 cards that
+  break the answer into distinct angles (e.g. overview → capabilities → proof/stats →
+  call-to-action). A lone single card is only for one genuinely thin, isolated fact.
+  Lean toward MORE cards and FULLER cards — but every card must carry real signal;
+  never pad with empty filler cards. If the agent signals no data, return {"cards":[]}.
 
 CARD TYPE (choose per card):
   - "flashcard" (image card) — use when the insight has strong supporting
@@ -126,11 +128,21 @@ CARD TYPE (choose per card):
 An infographic card = a "hero" + an ordered "sections" array.
 
 DENSITY MANDATE (the most important rule): a card worth showing is worth filling.
-A substantive infographic MUST have a hero (with a "description", plus a "graphic"
+This applies to BOTH card types — a substantive "flashcard" (alongside its image) and
+every "infographic" MUST have a hero/headline (with a "description", plus a "graphic"
 when a preset key fits) AND 2–4 ordered sections, of which AT LEAST ONE is a VISUAL
 section — "stats", "icon_bullets", or "cta_banner". A card that is only a header +
 one "bullet_list" is a FAILURE — either build it richer or fold the point into a
 sibling card. (Tiny, genuinely thin facts may stay small, but prefer richer.)
+
+VIBRANCY MANDATE: make cards lively and colorful, not flat.
+  - Reach for "stats" whenever ANY number exists; use 3–4 tiles and MIX per-tile
+    "intent" (neutral/success/warning/processing/urgent) for a multi-color row.
+  - PREFER "icon_bullets" (labelled point + Lucide icon) over plain "bullet_list".
+  - Close any "selling" card with a "cta_banner".
+  - Set each card's "visual_intent" to match the mood (success for wins, processing
+    for in-progress, etc.) so the card's accent color fits the message.
+  - Give every block a real, specific Lucide icon — never leave icons generic.
 
 Each section's "type" MUST be one of these five — any other value is invalid:
 

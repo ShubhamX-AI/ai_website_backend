@@ -21,19 +21,22 @@ class FormToolsMixin:
     async def preview_contact_form(
         self,
         context: RunContext,
-        user_name: str,
-        user_email: str,
-        user_phone: str,
-        contact_details: str,
+        user_name: str = "",
+        user_email: str = "",
+        user_phone: str = "",
+        contact_details: str = "",
     ):
         """
-        Send the contact form data to the frontend for user review.
+        Render the contact form on the frontend for the user to see. Call this FIRST to
+        put the (possibly empty) form on screen, then re-call it with updated values as you
+        collect each field by voice so the on-screen form fills in live. All fields are
+        optional — pass whatever is known so far; blanks render as empty form fields.
 
         Args:
-            user_name: The name of the user.
-            user_email: The email of the user.
-            user_phone: The phone number of the user.
-            contact_details: The reason or details the user provided for contacting.
+            user_name: The name of the user (blank if not yet collected).
+            user_email: The email of the user (blank if not yet collected).
+            user_phone: The phone number of the user (blank if not yet collected).
+            contact_details: The reason or details the user provided for contacting (blank if not yet collected).
         """
         self.logger.info(
             f"Sending contact form to the UI: {user_name} | {user_email} | {user_phone} | Details: {contact_details}"
@@ -49,8 +52,8 @@ class FormToolsMixin:
             },
         }
 
-        # Mock sending process
-        await asyncio.sleep(2.0)
+        # Brief delay for visual effect; kept short so the form appears promptly.
+        await asyncio.sleep(0.3)
         await self._publish_data_packet(payload, TOPIC_CONTACT_FORM)
         self._set_last_ui_snapshot(
             snapshot_type="contact_form_preview",
@@ -138,19 +141,22 @@ class FormToolsMixin:
     async def preview_job_application(
         self,
         context: RunContext,
-        user_name: str,
-        user_email: str,
-        user_phone: str,
-        job_details: str,
+        user_name: str = "",
+        user_email: str = "",
+        user_phone: str = "",
+        job_details: str = "",
     ):
         """
-        Send the job application data to the frontend for user review.
+        Render the job application form on the frontend for the user to see. Call this FIRST
+        to put the (possibly empty) form on screen, then re-call it with updated values as you
+        collect each field by voice so the on-screen form fills in live. All fields are
+        optional — pass whatever is known so far; blanks render as empty form fields.
 
         Args:
-            user_name: The name of the user.
-            user_email: The email of the user.
-            user_phone: The phone number of the user.
-            job_details: The job or career opening the user is applying for.
+            user_name: The name of the user (blank if not yet collected).
+            user_email: The email of the user (blank if not yet collected).
+            user_phone: The phone number of the user (blank if not yet collected).
+            job_details: The job or career opening the user is applying for (blank if not yet collected).
         """
         self.logger.info(
             f"Sending job application to the UI: {user_name} | {user_email} | {user_phone} | Job: {job_details}"
@@ -166,8 +172,8 @@ class FormToolsMixin:
             },
         }
 
-        # Mock sending process
-        await asyncio.sleep(2.0)
+        # Brief delay for visual effect; kept short so the form appears promptly.
+        await asyncio.sleep(0.3)
         await self._publish_data_packet(payload, TOPIC_JOB_APPLICATION)
         self._set_last_ui_snapshot(
             snapshot_type="job_application_preview",
