@@ -125,13 +125,27 @@ class UIAgentFunctions:
                                 if start_idx == -1:
                                     break
 
+                                # ponytail: brace depth must ignore { } inside string literals
                                 depth = 0
                                 end_idx = -1
+                                in_str = False
+                                esc = False
 
                                 for k in range(start_idx, len(buffer)):
-                                    if buffer[k] == "{":
+                                    c = buffer[k]
+                                    if in_str:
+                                        if esc:
+                                            esc = False
+                                        elif c == "\\":
+                                            esc = True
+                                        elif c == '"':
+                                            in_str = False
+                                        continue
+                                    if c == '"':
+                                        in_str = True
+                                    elif c == "{":
                                         depth += 1
-                                    elif buffer[k] == "}":
+                                    elif c == "}":
                                         depth -= 1
                                         if depth == 0:
                                             end_idx = k
@@ -316,7 +330,9 @@ class UIAgentFunctions:
                 else:
                     resolved_media["urls"] = []
 
-            payload["media"] = resolved_media
+            # ponytail: omit media with no urls so the FE never renders a broken image tile
+            if resolved_media.get("urls"):
+                payload["media"] = resolved_media
 
         if "visual_intent" not in payload and "intent" in card_obj:
             payload["visual_intent"] = card_obj["intent"]
@@ -331,8 +347,9 @@ class UIAgentFunctions:
         if chips:
             payload["chips"] = chips
 
-        if "title" not in payload or "value" not in payload:
+        if "title" not in payload:
             return None
+        payload.setdefault("value", "")  # rich image+sections card may omit value; keep it
 
         return payload
 

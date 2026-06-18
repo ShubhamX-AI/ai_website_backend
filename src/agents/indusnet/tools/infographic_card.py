@@ -34,7 +34,7 @@ class InfographicToolsMixin:
         hold MORE and LONGER structured text than a UI image card.
 
         Do NOT call this when 'publish_ui_stream' or any dedicated screen tool
-        (publisg_gloabl_pesense, publish_nearby_offices, publish_office_details,
+        (publish_global_presence, publish_nearby_offices, publish_office_details,
         preview_contact_form, preview_job_application, preview_meeting_invite,
         calculate_distance_to_destination) is already being called this turn — pick
         ONE visual per turn. The markdown is rendered visually only; your SPOKEN reply
