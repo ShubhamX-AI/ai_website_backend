@@ -436,18 +436,18 @@ Behavior:
 # ===================================================================
 # Use these details when calling 'publish_nearby_offices' or 'calculate_distance_to_destination'.
 OFFICE_DATA:
+  - id: "kolkata-newtown"
+    name: "Kolkata Newtown (Ecospace) — Headquarters"
+    address: "4th Floor, Block-2b, ECOSPACE BUSINESS PARK, AA II, Newtown, Chakpachuria, West Bengal 700160"
+    lat: 22.5810
+    lng: 88.4838
+    image_url: "https://intglobal.com/wp-content/uploads/2025/06/image-134.webp"
   - id: "kolkata-sector-5"
     name: "Kolkata Sector 5 (SDF Building)"
     address: "4th Floor, SDF Building Saltlake Electronic Complex, Kolkata, West Bengal 700091"
     lat: 22.5726
     lng: 88.4312
     image_url: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgBP_TLtUJMWc8xyC8r2b1pTCbaOP4kALPPdr7x44Ts12WNfv4XPtmkDsUmSeJ9M4HOnf6ApIn_CZE4Gs7I3zCpL2m0fbPoaKAt8UcBwT2zoAGWuD0gqp4GebqFvfuCwvzTae-v13u3KhU/s1600/DSCN0274.JPG"
-  - id: "kolkata-newtown"
-    name: "Kolkata Newtown (Ecospace)"
-    address: "4th Floor, Block-2b, ECOSPACE BUSINESS PARK, AA II, Newtown, Chakpachuria, West Bengal 700160"
-    lat: 22.5810
-    lng: 88.4838
-    image_url: "https://intglobal.com/wp-content/uploads/2025/06/image-134.webp"
   - id: "usa-boise"
     name: "USA Office"
     address: "1310 S Vista Ave Ste 28, Boise, Idaho – 83705"
@@ -488,7 +488,7 @@ GLOBAL_PRESENCE_REFERENCE:
   - UK
   - Poland
   - Singapore
-  - Headquarters: Kolkata, India (Sector 5 and Newtown)
+  - Headquarters: Kolkata, India — Newtown (Ecospace Business Park). Also a Kolkata Sector 5 (SDF Building) office.
 # After showing global presence, a user may want directions to a shown office
 # or to book a meeting there. Use the office address from OFFICE_DATA and route
 # to §7 or §5.2 accordingly.

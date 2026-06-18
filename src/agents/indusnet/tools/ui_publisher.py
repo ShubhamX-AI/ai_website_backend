@@ -158,8 +158,8 @@ class UIPublisherToolsMixin:
                     "Singapore": "Indus Net Technologies PTE Ltd., 60 Paya Lebar Road, #09-43 Paya Lebar Square – 409051",
                 },
                 "headquarters": {
+                    "Kolkata Newtown (Headquarters)": "4th Floor, Block-2b, ECOSPACE BUSINESS PARK, AA II, Newtown, Chakpachuria, West Bengal 700160",
                     "Kolkata Sector 5": "4th Floor, SDF Building Saltlake Electronic Complex, Kolkata, West Bengal 700091",
-                    "Kolkata Newtown": "4th Floor, Block-2b, ECOSPACE BUSINESS PARK, AA II, Newtown, Chakpachuria, West Bengal 700160",
                 },
             },
         }
